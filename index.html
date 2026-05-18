@@ -295,34 +295,58 @@ function parseDataMatrix(raw) {
 
 async function loadCachedProduct(data) {
 
-  const code = data.cip13;
-
   const url =
-    "https://script.google.com/macros/s/AKfycbzedlDtaqXmr1SWM7VUzC0TEnZcZqRNOmAxQ2D1ehcWXmHffoQxbSNFdfXkOsWCtWB2/exec?action=lookup&code=" +
-    encodeURIComponent(code);
+    "https://script.google.com/macros/s/TON_ID/exec?action=lookup&code=" +
+    encodeURIComponent(data.cip13);
 
   const response = await fetch(url);
   const result = await response.json();
 
+  // 1. SI CACHE OK
   if (result.found) {
 
-    document.getElementById("product").value =
-      result.product;
+    document.getElementById("product").value = result.product;
+    document.getElementById("comment").value = result.comment;
 
-    document.getElementById("comment").value =
-      result.comment;
+    // date auto si dispo
+    if (result.expiry) {
+      fillExpiry(result.expiry);
+    }
+
+    return;
+  }
+
+  // 2. SINON VIDAL VIA BACKEND
+  const vidalUrl =
+    "https://script.google.com/macros/s/AKfycbxZ5m14RBhlFUmD3lawaJiVswIcwW92rFIGmO6QtOk8mG5GMb0MuU353idWe-DbWc4Z/exec?action=vidal&code=" +
+    encodeURIComponent(data.cip13);
+
+  const vidalRes = await fetch(vidalUrl);
+  const vidalData = await vidalRes.json();
+
+  if (vidalData.found) {
+
+    document.getElementById("product").value = vidalData.product;
+
+    if (data.expiry) {
+      fillExpiry(data.expiry);
+    }
 
   } else {
 
-    // fallback VIDAL
-    statusEl.innerText =
-      "Produit inconnu → recherche VIDAL";
-
-    window.open(
-      "https://www.vidal.fr/recherche.html?query=" + code,
-      "_blank"
-    );
+    statusEl.innerText = "Produit introuvable même sur Vidal";
   }
+}
+
+function fillExpiry(expiry) {
+
+  // format GS1 : YYMMDD
+  const yy = expiry.substring(0,2);
+  const mm = expiry.substring(2,4);
+
+  const year = "20" + yy;
+
+  addDateField(mm + "-" + year);
 }
 
 function saveProduct() {
