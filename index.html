@@ -232,6 +232,9 @@ async function loadCachedProduct(code) {
       encodeURIComponent(code)
     );
 
+    console.log("CODE:", code);
+    console.log("URL:", "https://script.google.com/macros/s/XXXX/exec?action=lookup&code=" + code);
+    
     const data = await response.json();
 
     if (data.found) {
