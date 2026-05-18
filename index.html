@@ -192,18 +192,23 @@ async function scanLoop(detector) {
         const raw = codes[0].rawValue;
         const format = codes[0].format || "unknown";
 
-        const parsed = parseDataMatrix(raw);
-
-        scannedCode = parsed.gtin;
+        const raw = codes[0].rawValue;
+        const format = codes[0].format || "unknown";
         
-        // mais on garde aussi CIP possible
-        const cip13 = parsed.gtin ? parsed.gtin.substring(1) : null;
-
-        // 🛑 STOP SCAN IMMÉDIAT
-        clearInterval(interval);
-        stopScanner();
-
-        scannedCode = parsed.gtin || raw;
+        const parsed = parseDataMatrix(raw);
+        
+        // 🔥 AJOUT ICI
+        const gtin = parsed.gtin;
+        const cip13 = gtin && gtin.startsWith("0")
+          ? gtin.substring(1)
+          : gtin;
+        
+        console.log("PARSED:", parsed);
+        console.log("GTIN:", gtin);
+        console.log("CIP13:", cip13);
+        
+        // 👉 code principal pour recherche cache
+        scannedCode = gtin;
 
         statusEl.innerText =
           "🔍 CODE DÉTECTÉ\n\n" +
@@ -296,7 +301,7 @@ function parseDataMatrix(raw) {
 
 async function loadCachedProduct(data) {
 
-  const code = data.gtin;
+  const code = data.cip13;
 
   const url =
     "https://script.google.com/macros/s/AKfycbzedlDtaqXmr1SWM7VUzC0TEnZcZqRNOmAxQ2D1ehcWXmHffoQxbSNFdfXkOsWCtWB2/exec?action=lookup&code=" +
