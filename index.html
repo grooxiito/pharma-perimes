@@ -194,8 +194,10 @@ async function scanLoop(detector) {
 
         const parsed = parseDataMatrix(raw);
 
-        console.log("RAW:", raw);
-        console.log("PARSED:", parsed);
+        scannedCode = parsed.gtin;
+        
+        // mais on garde aussi CIP possible
+        const cip13 = parsed.gtin ? parsed.gtin.substring(1) : null;
 
         // 🛑 STOP SCAN IMMÉDIAT
         clearInterval(interval);
@@ -211,7 +213,10 @@ async function scanLoop(detector) {
           "Lot : " + (parsed.lot || "NON TROUVÉ") + "\n\n" +
           "📡 Recherche produit...";
 
-        loadCachedProduct(scannedCode);
+        loadCachedProduct({
+          gtin: parsed.gtin,
+          cip: cip13
+        });
       }
 
     } catch (e) {
@@ -289,43 +294,35 @@ function parseDataMatrix(raw) {
   return { gtin, expiry, lot };
 }
 
-async function loadCachedProduct(code) {
+async function loadCachedProduct(data) {
+
+  const code = data.gtin;
 
   const url =
-    "https://script.google.com/macros/s/AKfycbyEh4Y-tviC_xLsFvT9YN_fB1RurSLvWYEIa_NWYfeiiZYdGxLAlMgSIzr0gjXx07Jw/exec?action=lookup&code=" +
+    "https://script.google.com/macros/s/AKfycbzedlDtaqXmr1SWM7VUzC0TEnZcZqRNOmAxQ2D1ehcWXmHffoQxbSNFdfXkOsWCtWB2/exec?action=lookup&code=" +
     encodeURIComponent(code);
 
-  try {
+  const response = await fetch(url);
+  const result = await response.json();
 
-    const response = await fetch(url);
-    const data = await response.json();
+  if (result.found) {
 
-    console.log("API:", data);
+    document.getElementById("product").value =
+      result.product;
 
-    // 🔥 IMPORTANT : on garde le code visible
+    document.getElementById("comment").value =
+      result.comment;
+
+  } else {
+
+    // fallback VIDAL
     statusEl.innerText =
-      statusEl.innerText +
-      "\n\n📡 RÉPONSE API:\n" +
-      JSON.stringify(data, null, 2);
+      "Produit inconnu → recherche VIDAL";
 
-    if (data.found) {
-
-      document.getElementById("product").value =
-        data.product || "";
-
-      document.getElementById("comment").value =
-        data.comment || "";
-
-    } else {
-
-      statusEl.innerText +=
-        "\n\n❌ Produit inconnu (cache + base vide)";
-    }
-
-  } catch (err) {
-
-    statusEl.innerText =
-      "❌ Erreur API : " + err.message;
+    window.open(
+      "https://www.vidal.fr/recherche.html?query=" + code,
+      "_blank"
+    );
   }
 }
 
