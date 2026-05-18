@@ -247,37 +247,38 @@ function parseDataMatrix(raw) {
 
     const ai = raw.substring(i, i + 2);
 
-    // GTIN (01)
+    // GTIN
     if (ai === "01") {
-
       gtin = raw.substring(i + 2, i + 16);
       i += 16;
       continue;
     }
 
-    // Expiry (17)
+    // EXPIRY
     if (ai === "17") {
-
       expiry = raw.substring(i + 2, i + 8);
       i += 8;
       continue;
     }
 
-    // LOT (10) → variable length jusqu’à prochain AI connu
+    // LOT (corrigé proprement)
     if (ai === "10") {
 
       let start = i + 2;
       let j = start;
 
-      while (
-        j < raw.length &&
-        !["01", "17", "21"].includes(raw.substring(j, j + 2))
-      ) {
+      while (j < raw.length) {
+
+        const nextAI = raw.substring(j, j + 2);
+
+        if (nextAI === "17" || nextAI === "01" || nextAI === "21") {
+          break;
+        }
+
         j++;
       }
 
       lot = raw.substring(start, j);
-
       i = j;
       continue;
     }
@@ -285,11 +286,7 @@ function parseDataMatrix(raw) {
     i++;
   }
 
-  return {
-    gtin,
-    expiry,
-    lot
-  };
+  return { gtin, expiry, lot };
 }
 
 async function loadCachedProduct(code) {
