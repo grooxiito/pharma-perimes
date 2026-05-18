@@ -185,26 +185,35 @@ async function scanLoop(detector) {
 
     try {
 
-      const codes =
-        await detector.detect(video);
+      const codes = await detector.detect(video);
 
       if (codes.length > 0) {
 
-        scannedCode =
-          codes[0].rawValue;
+        const raw = codes[0].rawValue;
+        const format = codes[0].format || "unknown";
+
+        scannedCode = raw;
 
         statusEl.innerText =
-          "Code détecté : " + scannedCode;
+          "🔍 DETECTÉ\n" +
+          "Format : " + format + "\n" +
+          "Code : " + raw;
+
+        console.log("SCAN DEBUG", {
+          raw,
+          format
+        });
 
         stopScanner();
-
         clearInterval(interval);
 
         loadCachedProduct(scannedCode);
       }
 
     } catch (e) {
-      console.log(e);
+
+      statusEl.innerText =
+        "Erreur scan : " + e.message;
     }
 
   }, 500);
@@ -223,48 +232,37 @@ function stopScanner() {
 async function loadCachedProduct(code) {
 
   statusEl.innerText =
-    "Recherche produit...";
+    "📡 Recherche produit...\nCode: " + code;
+
+  const url =
+    "https://script.google.com/macros/s/TON_ID/exec?action=lookup&code=" +
+    encodeURIComponent(code);
+
+  console.log("API CALL :", url);
 
   try {
 
-    const response = await fetch(
-      "https://script.google.com/macros/s/AKfycbyEh4Y-tviC_xLsFvT9YN_fB1RurSLvWYEIa_NWYfeiiZYdGxLAlMgSIzr0gjXx07Jw/exec?action=lookup&code=" +
-      encodeURIComponent(code)
-    );
-
-    console.log("CODE:", code);
-    console.log("URL:", "https://script.google.com/macros/s/XXXX/exec?action=lookup&code=" + code);
-    
+    const response = await fetch(url);
     const data = await response.json();
+
+    console.log("API RESPONSE :", data);
+
+    statusEl.innerText =
+      "📡 Réponse API :\n" +
+      JSON.stringify(data, null, 2);
 
     if (data.found) {
 
-      document
-        .getElementById("product")
-        .value = data.product || "";
+      document.getElementById("product").value =
+        data.product || "";
 
-      document
-        .getElementById("comment")
-        .value = data.comment || "";
-
-      if (data.expiration) {
-
-        document
-          .querySelector(".date")
-          .value = data.expiration;
-      }
-
-      statusEl.innerText =
-        "Produit reconnu";
+      document.getElementById("comment").value =
+        data.comment || "";
 
     } else {
 
-      document
-        .getElementById("product")
-        .value = "";
-
-      statusEl.innerText =
-        "Produit inconnu — compléter manuellement";
+      statusEl.innerText +=
+        "\n\n❌ Produit inconnu";
     }
 
   } catch (err) {
@@ -272,7 +270,7 @@ async function loadCachedProduct(code) {
     console.error(err);
 
     statusEl.innerText =
-      "Erreur recherche produit";
+      "❌ Erreur API : " + err.message;
   }
 }
 
