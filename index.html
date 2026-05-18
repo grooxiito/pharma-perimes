@@ -295,46 +295,71 @@ function parseDataMatrix(raw) {
 
 async function loadCachedProduct(data) {
 
-  const url =
-    "https://script.google.com/macros/s/AKfycbxZ5m14RBhlFUmD3lawaJiVswIcwW92rFIGmO6QtOk8mG5GMb0MuU353idWe-DbWc4Z/exec?action=lookup&code=" +
-    encodeURIComponent(data.cip13);
+  try {
 
-  const response = await fetch(url);
-  const result = await response.json();
+    const code = data.cip13 || data.gtin;
 
-  // 1. SI CACHE OK
-  if (result.found) {
+    statusEl.innerText =
+      "📡 Recherche produit...\nCode: " + code;
 
-    document.getElementById("product").value = result.product;
-    document.getElementById("comment").value = result.comment;
+    const url =
+      "https://script.google.com/macros/s/AKfycbxZ5m14RBhlFUmD3lawaJiVswIcwW92rFIGmO6QtOk8mG5GMb0MuU353idWe-DbWc4Z/exec?action=lookup&code=" +
+      encodeURIComponent(code);
 
-    // date auto si dispo
-    if (result.expiry) {
-      fillExpiry(result.expiry);
+    const response = await fetch(url);
+    const result = await response.json();
+
+    console.log("CACHE RESULT:", result);
+
+    // ✅ CAS 1 : CACHE OK
+    if (result && result.found) {
+
+      document.getElementById("product").value =
+        result.product || "";
+
+      document.getElementById("comment").value =
+        result.comment || "";
+
+      if (result.expiry) {
+        fillExpiry(result.expiry);
+      }
+
+      statusEl.innerText = "✔ Produit trouvé (cache)";
+      return;
     }
 
-    return;
-  }
+    // ❌ CAS 2 : VIDAL fallback
+    statusEl.innerText = "🔎 Recherche Vidal...";
 
-  // 2. SINON VIDAL VIA BACKEND
-  const vidalUrl =
-    "https://script.google.com/macros/s/AKfycbxZ5m14RBhlFUmD3lawaJiVswIcwW92rFIGmO6QtOk8mG5GMb0MuU353idWe-DbWc4Z/exec?action=vidal&code=" +
-    encodeURIComponent(data.cip13);
+    const vidalUrl =
+      "https://script.google.com/macros/s/AKfycbxZ5m14RBhlFUmD3lawaJiVswIcwW92rFIGmO6QtOk8mG5GMb0MuU353idWe-DbWc4Z/exec?action=vidal&code=" +
+      encodeURIComponent(code);
 
-  const vidalRes = await fetch(vidalUrl);
-  const vidalData = await vidalRes.json();
+    const vidalRes = await fetch(vidalUrl);
+    const vidalData = await vidalRes.json();
 
-  if (vidalData.found) {
+    console.log("VIDAL RESULT:", vidalData);
 
-    document.getElementById("product").value = vidalData.product;
+    if (vidalData && vidalData.found) {
 
-    if (data.expiry) {
-      fillExpiry(data.expiry);
+      document.getElementById("product").value =
+        vidalData.product || "";
+
+      statusEl.innerText = "✔ Produit trouvé (Vidal)";
+      return;
+
     }
 
-  } else {
+    // ❌ CAS 3 : RIEN TROUVÉ
+    statusEl.innerText =
+      "❌ Produit inconnu";
 
-    statusEl.innerText = "Produit introuvable même sur Vidal";
+  } catch (err) {
+
+    console.error(err);
+
+    statusEl.innerText =
+      "❌ Erreur recherche: " + err.message;
   }
 }
 
