@@ -241,17 +241,49 @@ function parseDataMatrix(raw) {
   let expiry = null;
   let lot = null;
 
-  // GTIN (01)
-  const ai01 = raw.match(/01(\d{14})/);
-  if (ai01) gtin = ai01[1];
+  let i = 0;
 
-  // Expiration (17)
-  const ai17 = raw.match(/17(\d{6})/);
-  if (ai17) expiry = ai17[1];
+  while (i < raw.length) {
 
-  // Lot (10)
-  const ai10 = raw.match(/10([A-Za-z0-9]+)/);
-  if (ai10) lot = ai10[1];
+    const ai = raw.substring(i, i + 2);
+
+    // GTIN (01)
+    if (ai === "01") {
+
+      gtin = raw.substring(i + 2, i + 16);
+      i += 16;
+      continue;
+    }
+
+    // Expiry (17)
+    if (ai === "17") {
+
+      expiry = raw.substring(i + 2, i + 8);
+      i += 8;
+      continue;
+    }
+
+    // LOT (10) → variable length jusqu’à prochain AI connu
+    if (ai === "10") {
+
+      let start = i + 2;
+      let j = start;
+
+      while (
+        j < raw.length &&
+        !["01", "17", "21"].includes(raw.substring(j, j + 2))
+      ) {
+        j++;
+      }
+
+      lot = raw.substring(start, j);
+
+      i = j;
+      continue;
+    }
+
+    i++;
+  }
 
   return {
     gtin,
