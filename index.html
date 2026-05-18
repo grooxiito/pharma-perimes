@@ -228,7 +228,7 @@ async function loadCachedProduct(code) {
   try {
 
     const response = await fetch(
-      "VOTRE_URL_APPS_SCRIPT?action=lookup&code=" +
+      "https://script.google.com/macros/s/AKfycbyEh4Y-tviC_xLsFvT9YN_fB1RurSLvWYEIa_NWYfeiiZYdGxLAlMgSIzr0gjXx07Jw/exec?action=lookup&code=" +
       encodeURIComponent(code)
     );
 
