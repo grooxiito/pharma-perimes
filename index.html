@@ -194,15 +194,15 @@ async function scanLoop(detector) {
 
         scannedCode = raw;
 
+        // 🔥 IMPORTANT : on affiche ET on garde
         statusEl.innerText =
-          "🔍 DETECTÉ\n" +
-          "Format : " + format + "\n" +
-          "Code : " + raw;
+          "🔍 CODE DÉTECTÉ\n\n" +
+          "Format : " + format + "\n\n" +
+          "Code brut :\n" + raw + "\n\n" +
+          "📡 Recherche en cours...";
 
-        console.log("SCAN DEBUG", {
-          raw,
-          format
-        });
+        // log aussi
+        console.log("SCAN:", raw);
 
         stopScanner();
         clearInterval(interval);
@@ -231,24 +231,21 @@ function stopScanner() {
 
 async function loadCachedProduct(code) {
 
-  statusEl.innerText =
-    "📡 Recherche produit...\nCode: " + code;
-
   const url =
     "https://script.google.com/macros/s/AKfycbyEh4Y-tviC_xLsFvT9YN_fB1RurSLvWYEIa_NWYfeiiZYdGxLAlMgSIzr0gjXx07Jw/exec?action=lookup&code=" +
     encodeURIComponent(code);
-
-  console.log("API CALL :", url);
 
   try {
 
     const response = await fetch(url);
     const data = await response.json();
 
-    console.log("API RESPONSE :", data);
+    console.log("API:", data);
 
+    // 🔥 IMPORTANT : on garde le code visible
     statusEl.innerText =
-      "📡 Réponse API :\n" +
+      statusEl.innerText +
+      "\n\n📡 RÉPONSE API:\n" +
       JSON.stringify(data, null, 2);
 
     if (data.found) {
@@ -262,12 +259,10 @@ async function loadCachedProduct(code) {
     } else {
 
       statusEl.innerText +=
-        "\n\n❌ Produit inconnu";
+        "\n\n❌ Produit inconnu (cache + base vide)";
     }
 
   } catch (err) {
-
-    console.error(err);
 
     statusEl.innerText =
       "❌ Erreur API : " + err.message;
