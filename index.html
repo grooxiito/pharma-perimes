@@ -225,19 +225,52 @@ async function loadCachedProduct(code) {
   statusEl.innerText =
     "Recherche produit...";
 
-  // TEMPORAIRE
-  // sera relié Apps Script ensuite
+  try {
 
-  setTimeout(() => {
+    const response = await fetch(
+      "VOTRE_URL_APPS_SCRIPT?action=lookup&code=" +
+      encodeURIComponent(code)
+    );
 
-    document
-      .getElementById("product")
-      .value = "";
+    const data = await response.json();
+
+    if (data.found) {
+
+      document
+        .getElementById("product")
+        .value = data.product || "";
+
+      document
+        .getElementById("comment")
+        .value = data.comment || "";
+
+      if (data.expiration) {
+
+        document
+          .querySelector(".date")
+          .value = data.expiration;
+      }
+
+      statusEl.innerText =
+        "Produit reconnu";
+
+    } else {
+
+      document
+        .getElementById("product")
+        .value = "";
+
+      statusEl.innerText =
+        "Produit inconnu — compléter manuellement";
+    }
+
+  } catch (err) {
+
+    console.error(err);
 
     statusEl.innerText =
-      "Produit inconnu — compléter manuellement";
-
-  }, 500);
+      "Erreur recherche produit";
+  }
 }
 
 function saveProduct() {
