@@ -192,41 +192,35 @@ async function scanLoop(detector) {
         const raw = codes[0].rawValue;
         const format = codes[0].format || "unknown";
 
-        const raw = codes[0].rawValue;
-        const format = codes[0].format || "unknown";
-        
         const parsed = parseDataMatrix(raw);
-        
-        // 🔥 AJOUT ICI
+
         const gtin = parsed.gtin;
         const cip13 = gtin && gtin.startsWith("0")
           ? gtin.substring(1)
           : gtin;
-        
-        console.log("PARSED:", parsed);
-        console.log("GTIN:", gtin);
-        console.log("CIP13:", cip13);
-        
-        // 👉 code principal pour recherche cache
-        scannedCode = gtin;
+
+        console.log({ raw, parsed, gtin, cip13 });
+
+        // STOP SCAN
+        clearInterval(interval);
+        stopScanner();
+
+        scannedCode = cip13 || gtin;
 
         statusEl.innerText =
           "🔍 CODE DÉTECTÉ\n\n" +
-          "Format : " + format + "\n\n" +
-          "GTIN : " + (parsed.gtin || "NON TROUVÉ") + "\n" +
-          "Expiry : " + (parsed.expiry || "NON TROUVÉ") + "\n" +
-          "Lot : " + (parsed.lot || "NON TROUVÉ") + "\n\n" +
+          "GTIN : " + gtin + "\n" +
+          "CIP13 : " + cip13 + "\n" +
+          "Expiry : " + (parsed.expiry || "N/A") + "\n\n" +
           "📡 Recherche produit...";
 
         loadCachedProduct({
-          gtin: parsed.gtin,
-          cip: cip13
+          gtin: gtin,
+          cip13: cip13
         });
       }
 
     } catch (e) {
-
-      console.log(e);
 
       statusEl.innerText =
         "Erreur scan : " + e.message;
