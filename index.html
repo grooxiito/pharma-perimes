@@ -192,25 +192,31 @@ async function scanLoop(detector) {
         const raw = codes[0].rawValue;
         const format = codes[0].format || "unknown";
 
-        scannedCode = raw;
+        const parsed = parseDataMatrix(raw);
 
-        // 🔥 IMPORTANT : on affiche ET on garde
+        console.log("RAW:", raw);
+        console.log("PARSED:", parsed);
+
+        // 🛑 STOP SCAN IMMÉDIAT
+        clearInterval(interval);
+        stopScanner();
+
+        scannedCode = parsed.gtin || raw;
+
         statusEl.innerText =
           "🔍 CODE DÉTECTÉ\n\n" +
           "Format : " + format + "\n\n" +
-          "Code brut :\n" + raw + "\n\n" +
-          "📡 Recherche en cours...";
-
-        // log aussi
-        console.log("SCAN:", raw);
-
-        stopScanner();
-        clearInterval(interval);
+          "GTIN : " + (parsed.gtin || "NON TROUVÉ") + "\n" +
+          "Expiry : " + (parsed.expiry || "NON TROUVÉ") + "\n" +
+          "Lot : " + (parsed.lot || "NON TROUVÉ") + "\n\n" +
+          "📡 Recherche produit...";
 
         loadCachedProduct(scannedCode);
       }
 
     } catch (e) {
+
+      console.log(e);
 
       statusEl.innerText =
         "Erreur scan : " + e.message;
@@ -227,6 +233,31 @@ function stopScanner() {
       .getTracks()
       .forEach(track => track.stop());
   }
+}
+
+function parseDataMatrix(raw) {
+
+  let gtin = null;
+  let expiry = null;
+  let lot = null;
+
+  // GTIN (01)
+  const ai01 = raw.match(/01(\d{14})/);
+  if (ai01) gtin = ai01[1];
+
+  // Expiration (17)
+  const ai17 = raw.match(/17(\d{6})/);
+  if (ai17) expiry = ai17[1];
+
+  // Lot (10)
+  const ai10 = raw.match(/10([A-Za-z0-9]+)/);
+  if (ai10) lot = ai10[1];
+
+  return {
+    gtin,
+    expiry,
+    lot
+  };
 }
 
 async function loadCachedProduct(code) {
