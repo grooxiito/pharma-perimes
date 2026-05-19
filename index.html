@@ -223,8 +223,15 @@ async function lookup(code) {
     elStatus.textContent = "Produit inconnu";
 
   } catch (err) {
-    log("FATAL ERROR:", err);
-    elStatus.textContent = "Erreur réseau";
+
+    console.error("FATAL ERROR OBJECT:", err);
+  
+    log("FATAL ERROR NAME:", err?.name);
+    log("FATAL ERROR MESSAGE:", err?.message);
+    log("FATAL ERROR STACK:", err?.stack);
+  
+    elStatus.textContent =
+      "Erreur: " + (err?.message || "inconnue");
   }
 }
 
