@@ -364,38 +364,37 @@ async function loadCachedProduct(data) {
       return;
     }
 
-    // VIDAL FALLBACK
-    debugLog("CACHE MISS -> VIDAL");
-
-    const vidalUrl = BASE_URL + "&action=vidal&code=" + encodeURIComponent(code);
-
-    debugLog("VIDAL URL:", vidalUrl);
-
-    const vidalRes = await fetch(vidalUrl);
-
-    debugLog("VIDAL STATUS:", vidalRes.status);
-
-    const vidalData = await vidalRes.json();
-
-    debugLog("VIDAL RESULT:", vidalData);
-
-    if (vidalData && vidalData.found) {
-
+    // Remplace la recherche VIDAL par enrichissement online
+    const enrichUrl =
+      BASE_URL + "&action=enrich&code=" + encodeURIComponent(code);
+    
+    const enrichRes = await fetch(enrichUrl);
+    const enrichData = await enrichRes.json();
+    
+    debugLog("ENRICH RESULT:", enrichData);
+    
+    if (enrichData && enrichData.found) {
+    
       document.getElementById("product").value =
-        vidalData.product || "";
-
-      if (data.expiry) {
-        fillExpiry(data.expiry);
-      }
-
+        enrichData.product;
+    
       statusEl.innerText =
-        "Produit trouvé Vidal";
-
-      debugLog("PRODUCT:", vidalData.product);
-
+        "Produit enrichi automatiquement";
+    
+      // 🔥 auto cache write possible ici ensuite
+      function saveToCache(cip13, product) {
+      
+        const sheet = SpreadsheetApp.getActive()
+          .getSheetByName("_CACHE_PRODUITS");
+      
+        sheet.appendRow([
+          cip13,
+          product,
+          new Date()
+        ]);
+      }
       return;
     }
-
     debugLog("NOT FOUND ANYWHERE");
 
     statusEl.innerText =
