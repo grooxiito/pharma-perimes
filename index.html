@@ -89,6 +89,8 @@
   Enregistrer
 </button>
 
+<pre id="debug" style="background:#111; color:#0f0;padding:10px;margin-top:20px;font-size:12px;white-space:pre-wrap;border-radius:10px;max-height:300px;overflow:auto;"></pre>
+  
 <div id="status"></div>
 
 <script>
@@ -199,7 +201,10 @@ async function scanLoop(detector) {
           ? gtin.substring(1)
           : gtin;
 
-        console.log({ raw, parsed, gtin, cip13 });
+        debugLog("RAW:", raw);
+        debugLog("PARSED:", parsed);
+        debugLog("GTIN:", gtin);
+        debugLog("CIP13:", cip13);
 
         // STOP SCAN
         clearInterval(interval);
@@ -299,20 +304,28 @@ async function loadCachedProduct(data) {
 
     const code = data.cip13 || data.gtin;
 
-    statusEl.innerText =
-      "📡 Recherche produit...\nCode: " + code;
+    debugLog("=== LOOKUP START ===");
+    debugLog("SEARCH CODE:", code);
 
-    const url =
+    // URL lookup cache
+    const lookupUrl =
       "https://script.google.com/macros/s/AKfycbxZ5m14RBhlFUmD3lawaJiVswIcwW92rFIGmO6QtOk8mG5GMb0MuU353idWe-DbWc4Z/exec?action=lookup&code=" +
       encodeURIComponent(code);
 
-    const response = await fetch(url);
+    debugLog("LOOKUP URL:", lookupUrl);
+
+    const response = await fetch(lookupUrl);
+
+    debugLog("LOOKUP STATUS:", response.status);
+
     const result = await response.json();
 
-    console.log("CACHE RESULT:", result);
+    debugLog("LOOKUP RESULT:", result);
 
-    // ✅ CAS 1 : CACHE OK
+    // CACHE HIT
     if (result && result.found) {
+
+      debugLog("CACHE FOUND");
 
       document.getElementById("product").value =
         result.product || "";
@@ -320,46 +333,61 @@ async function loadCachedProduct(data) {
       document.getElementById("comment").value =
         result.comment || "";
 
-      if (result.expiry) {
-        fillExpiry(result.expiry);
+      if (data.expiry) {
+        fillExpiry(data.expiry);
       }
 
-      statusEl.innerText = "✔ Produit trouvé (cache)";
+      statusEl.innerText =
+        "Produit trouvé cache";
+
       return;
     }
 
-    // ❌ CAS 2 : VIDAL fallback
-    statusEl.innerText = "🔎 Recherche Vidal...";
+    // VIDAL FALLBACK
+    debugLog("CACHE MISS -> VIDAL");
 
     const vidalUrl =
       "https://script.google.com/macros/s/AKfycbxZ5m14RBhlFUmD3lawaJiVswIcwW92rFIGmO6QtOk8mG5GMb0MuU353idWe-DbWc4Z/exec?action=vidal&code=" +
       encodeURIComponent(code);
 
+    debugLog("VIDAL URL:", vidalUrl);
+
     const vidalRes = await fetch(vidalUrl);
+
+    debugLog("VIDAL STATUS:", vidalRes.status);
+
     const vidalData = await vidalRes.json();
 
-    console.log("VIDAL RESULT:", vidalData);
+    debugLog("VIDAL RESULT:", vidalData);
 
     if (vidalData && vidalData.found) {
 
       document.getElementById("product").value =
         vidalData.product || "";
 
-      statusEl.innerText = "✔ Produit trouvé (Vidal)";
-      return;
+      if (data.expiry) {
+        fillExpiry(data.expiry);
+      }
 
+      statusEl.innerText =
+        "Produit trouvé Vidal";
+
+      debugLog("PRODUCT:", vidalData.product);
+
+      return;
     }
 
-    // ❌ CAS 3 : RIEN TROUVÉ
+    debugLog("NOT FOUND ANYWHERE");
+
     statusEl.innerText =
-      "❌ Produit inconnu";
+      "Produit inconnu";
 
   } catch (err) {
 
-    console.error(err);
+    debugLog("FETCH ERROR:", err);
 
     statusEl.innerText =
-      "❌ Erreur recherche: " + err.message;
+      "Erreur de recherche : " + err.message;
   }
 }
 
@@ -403,6 +431,25 @@ function saveProduct() {
 
   statusEl.innerText =
     "Produit prêt à envoyer";
+}
+
+function debugLog(...args) {
+
+  const el = document.getElementById("debug");
+
+  const text = args
+    .map(a =>
+      typeof a === "object"
+        ? JSON.stringify(a, null, 2)
+        : String(a)
+    )
+    .join(" ");
+
+  console.log(text);
+
+  el.textContent += "\n" + text;
+
+  el.scrollTop = el.scrollHeight;
 }
 
 </script>
