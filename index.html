@@ -163,10 +163,18 @@ function extractGTIN(raw) {
 
 async function lookup(code) {
 
+  if (!code) {
+    log("CODE NULL OR UNDEFINED");
+    elStatus.textContent = "Code invalide";
+    return;
+  }
+  
   try {
 
     elStatus.textContent = "Recherche...";
 
+    log("CODE SENT:", code);
+    
     const res = await fetch(
       BASE_URL + "&action=lookup&code=" + code
     );
