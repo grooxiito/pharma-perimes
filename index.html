@@ -98,6 +98,7 @@
 let stream = null;
 let scannedCode = "";
 
+const BASE_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnShNUPtuxoDa2Iys-Um8BG2_CHrLpwWj-fVmRiFbJn5L-WHcfUgpyst22dsMIyJfTmYKNWb0L0TcTJfx52I0FA8t4rNZ8QpXTzV4Vo1wvAEsRfDEG7DK4Nz5tX-rVYKwbhlB6xC8bWJa1ctP3-AqjTEFF8Jq-I2o0rma980-EvHR_JePe7MzOEcLiPeK3BhGYLJ6UGLSd3ak_xLmlUNfDpD17nF1iZp3FIpr1inxFralw3XPymMsJxzrPmS312We0UqrhHUuTCXDO-o6Oc8zjnuekeDEitF0H0DVtoY2Pm-Fyode2yjc4LzNn2sWA&lib=Mw3156psM5NRjIHhqxUSdNxHkt4HNAJN7";
 const statusEl = document.getElementById("status");
 const video = document.getElementById("video");
 
@@ -308,9 +309,7 @@ async function loadCachedProduct(data) {
     debugLog("SEARCH CODE:", code);
 
     // URL lookup cache
-    const lookupUrl =
-      "https://script.google.com/macros/s/AKfycbx4AH9de5Yc50Z90s_FA5tinQcREXa26hINETrk6OCSko2iRJm9IV-uA9wXeh0jKq5m/exec?action=lookup&code=" +
-      encodeURIComponent(code);
+    const lookupUrl = BASE_URL + "&action=lookup&code=" + encodeURIComponent(code);
 
     debugLog("LOOKUP URL:", lookupUrl);
 
@@ -346,9 +345,7 @@ async function loadCachedProduct(data) {
     // VIDAL FALLBACK
     debugLog("CACHE MISS -> VIDAL");
 
-    const vidalUrl =
-      "https://script.google.com/macros/s/AKfycbx4AH9de5Yc50Z90s_FA5tinQcREXa26hINETrk6OCSko2iRJm9IV-uA9wXeh0jKq5m/exec?action=vidal&code=" +
-      encodeURIComponent(code);
+    const vidalUrl = BASE_URL + "&action=vidal&code=" + encodeURIComponent(code);
 
     debugLog("VIDAL URL:", vidalUrl);
 
