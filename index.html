@@ -264,6 +264,12 @@ function save() {
   elStatus.textContent = "Enregistré (mock)";
 }
 
+function json(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 </script>
 
 </body>
