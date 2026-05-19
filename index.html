@@ -171,7 +171,17 @@ async function lookup(code) {
       BASE_URL + "&action=lookup&code=" + code
     );
 
-    const data = await res.json();
+    const text = await res.text();
+    log("LOOKUP RAW:", text);
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      log("LOOKUP JSON ERROR:", e.message);
+      elStatus.textContent = "Backend invalide (lookup)";
+      return;
+    }
 
     log("CACHE", data);
 
@@ -180,11 +190,21 @@ async function lookup(code) {
       return;
     }
 
-    const enrich = await fetch(
+    const enrichRes = await fetch(
       BASE_URL + "&action=enrich&code=" + code
     );
 
-    const e = await enrich.json();
+    const enrichText = await enrichRes.text();
+    log("ENRICH RAW:", enrichText);
+
+    let e;
+    try {
+      e = JSON.parse(enrichText);
+    } catch (err) {
+      log("ENRICH JSON ERROR:", err.message);
+      elStatus.textContent = "Backend invalide (enrich)";
+      return;
+    }
 
     log("ENRICH", e);
 
@@ -203,7 +223,7 @@ async function lookup(code) {
     elStatus.textContent = "Produit inconnu";
 
   } catch (err) {
-    log("ERROR", err);
+    log("FATAL ERROR:", err);
     elStatus.textContent = "Erreur réseau";
   }
 }
