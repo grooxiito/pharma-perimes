@@ -1,454 +1,232 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gestion périmés</title>
 
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0" />
+<style>
+body {
+  font-family: Arial;
+  max-width: 520px;
+  margin: auto;
+  padding: 16px;
+  background: #f5f5f5;
+}
 
-  <title>Gestion périmés pharmacie</title>
+h1 {
+  font-size: 22px;
+}
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 500px;
-      margin: auto;
-      padding: 20px;
-      background: #f5f5f5;
-    }
+button {
+  width: 100%;
+  padding: 16px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 10px;
+  background: #1976d2;
+  color: white;
+  font-size: 16px;
+}
 
-    h1 {
-      font-size: 24px;
-    }
+input {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
 
-    button {
-      width: 100%;
-      padding: 18px;
-      margin-top: 10px;
-      border: none;
-      border-radius: 12px;
-      background: #1976d2;
-      color: white;
-      font-size: 18px;
-    }
+video {
+  width: 100%;
+  margin-top: 10px;
+  border-radius: 10px;
+  background: black;
+}
 
-    input {
-      width: 100%;
-      padding: 14px;
-      margin-top: 10px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-      font-size: 16px;
-    }
+#status {
+  margin-top: 12px;
+  font-weight: bold;
+}
 
-    .date-row {
-      margin-top: 10px;
-    }
-
-    video {
-      width: 100%;
-      margin-top: 15px;
-      border-radius: 12px;
-      background: black;
-    }
-
-    #status {
-      margin-top: 20px;
-      font-weight: bold;
-    }
-  </style>
+#debug {
+  background: #111;
+  color: #0f0;
+  font-size: 11px;
+  padding: 10px;
+  margin-top: 15px;
+  height: 200px;
+  overflow: auto;
+  border-radius: 10px;
+}
+</style>
 </head>
 
 <body>
 
-<h1>Gestion périmés</h1>
+<h1>📦 Gestion périmés</h1>
 
-<button id="scanBtn">
-  Scanner produit
-</button>
+<button id="scanBtn">Scanner produit</button>
 
-<video id="video"
-       autoplay
-       playsinline>
-</video>
+<video id="video" autoplay playsinline></video>
 
-<input id="product"
-       placeholder="Nom produit">
-
-<input id="comment"
-       placeholder="Commentaire / labo">
+<input id="product" placeholder="Nom produit">
+<input id="comment" placeholder="Commentaire">
 
 <div id="dates"></div>
 
-<button id="addDateBtn">
-  + Ajouter une date
-</button>
+<button id="addDate">+ Ajouter date</button>
+<button id="saveBtn">Enregistrer</button>
 
-<button id="saveBtn">
-  Enregistrer
-</button>
-
-<pre id="debug" style="background:#111; color:#0f0;padding:10px;margin-top:20px;font-size:12px;white-space:pre-wrap;border-radius:10px;max-height:300px;overflow:auto;"></pre>
-  
 <div id="status"></div>
+<pre id="debug"></pre>
 
 <script>
 
-let stream = null;
+const BASE_URL = "TON_URL_APPS_SCRIPT";
+
+let stream;
 let scannedCode = "";
 
-const BASE_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnShNUPtuxoDa2Iys-Um8BG2_CHrLpwWj-fVmRiFbJn5L-WHcfUgpyst22dsMIyJfTmYKNWb0L0TcTJfx52I0FA8t4rNZ8QpXTzV4Vo1wvAEsRfDEG7DK4Nz5tX-rVYKwbhlB6xC8bWJa1ctP3-AqjTEFF8Jq-I2o0rma980-EvHR_JePe7MzOEcLiPeK3BhGYLJ6UGLSd3ak_xLmlUNfDpD17nF1iZp3FIpr1inxFralw3XPymMsJxzrPmS312We0UqrhHUuTCXDO-o6Oc8zjnuekeDEitF0H0DVtoY2Pm-Fyode2yjc4LzNn2sWA&lib=Mw3156psM5NRjIHhqxUSdNxHkt4HNAJN7";
-const statusEl = document.getElementById("status");
-const video = document.getElementById("video");
+const elStatus = document.getElementById("status");
+const elDebug = document.getElementById("debug");
 
-document
-  .getElementById("scanBtn")
-  .addEventListener("click", startScanner);
-
-document
-  .getElementById("addDateBtn")
-  .addEventListener("click", addDateField);
-
-document
-  .getElementById("saveBtn")
-  .addEventListener("click", saveProduct);
-
-function debugLog(...args) {
-
-  const el = document.getElementById("debug");
-
-  const text = args
-    .map(a =>
-      typeof a === "object"
-        ? JSON.stringify(a, null, 2)
-        : String(a)
-    )
-    .join(" ");
-
-  console.log(text);
-
-  el.textContent += "\n" + text;
-
-  el.scrollTop = el.scrollHeight;
-} 
-  
-function addDateField(value = "") {
-
-  const div = document.createElement("div");
-
-  div.className = "date-row";
-
-  div.innerHTML = `
-    <input class="date"
-           placeholder="MM-YYYY"
-           value="${value}">
-  `;
-
-  document
-    .getElementById("dates")
-    .appendChild(div);
+function log(...a) {
+  elDebug.textContent += "\n" + a.map(x =>
+    typeof x === "object" ? JSON.stringify(x) : x
+  ).join(" ");
 }
 
-addDateField();
+document.getElementById("scanBtn").onclick = startScan;
+document.getElementById("addDate").onclick = () => addDate();
+document.getElementById("saveBtn").onclick = save;
 
-async function startScanner() {
+addDate();
 
-  try {
-
-    statusEl.innerText =
-      "Demande autorisation caméra...";
-
-    stream =
-      await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: {
-            ideal: "environment"
-          }
-        }
-      });
-
-    video.srcObject = stream;
-
-    statusEl.innerText =
-      "Caméra active";
-
-    if (!("BarcodeDetector" in window)) {
-
-      statusEl.innerText =
-        "BarcodeDetector non supporté";
-
-      return;
-    }
-
-    const detector =
-      new BarcodeDetector({
-        formats: [
-          "ean_13",
-          "qr_code",
-          "data_matrix"
-        ]
-      });
-
-    scanLoop(detector);
-
-  } catch (err) {
-
-    console.error(err);
-
-    statusEl.innerText =
-      "Erreur caméra : " + err.message;
-  }
+function addDate(value = "") {
+  const d = document.createElement("input");
+  d.className = "date";
+  d.placeholder = "MM-YYYY";
+  d.value = value;
+  document.getElementById("dates").appendChild(d);
 }
 
-async function scanLoop(detector) {
+async function startScan() {
+
+  elStatus.textContent = "Autorisation caméra...";
+
+  stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "environment" }
+  });
+
+  document.getElementById("video").srcObject = stream;
+
+  const detector = new BarcodeDetector({
+    formats: ["ean_13", "data_matrix", "qr_code"]
+  });
+
+  elStatus.textContent = "Scan actif";
 
   const interval = setInterval(async () => {
 
-    try {
+    const codes = await detector.detect(document.getElementById("video"));
 
-      const codes = await detector.detect(video);
+    if (!codes.length) return;
 
-      if (codes.length > 0) {
+    clearInterval(interval);
+    stop();
 
-        const raw = codes[0].rawValue;
-        const format = codes[0].format || "unknown";
+    const raw = codes[0].rawValue;
 
-        const parsed = parseDataMatrix(raw);
+    log("RAW", raw);
 
-        const gtin = parsed.gtin;
-        const cip13 = gtin && gtin.startsWith("0")
-          ? gtin.substring(1)
-          : gtin;
+    const gtin = extractGTIN(raw);
+    const cip13 = gtin?.startsWith("0") ? gtin.slice(1) : gtin;
 
-        debugLog("RAW:", raw);
-        debugLog("PARSED:", parsed);
-        debugLog("GTIN:", gtin);
-        debugLog("CIP13:", cip13);
+    scannedCode = cip13;
 
-        // STOP SCAN
-        clearInterval(interval);
-        stopScanner();
+    elStatus.textContent =
+      "Code détecté: " + cip13;
 
-        scannedCode = cip13 || gtin;
-
-        statusEl.innerText =
-          "🔍 CODE DÉTECTÉ\n\n" +
-          "GTIN : " + gtin + "\n" +
-          "CIP13 : " + cip13 + "\n" +
-          "Expiry : " + (parsed.expiry || "N/A") + "\n\n" +
-          "📡 Recherche produit...";
-
-        loadCachedProduct({
-          gtin: gtin,
-          cip13: cip13
-        });
-      }
-
-    } catch (e) {
-
-      statusEl.innerText =
-        "Erreur scan : " + e.message;
-    }
-
-  }, 500);
+    await lookup(cip13);
+  }, 400);
 }
 
-function stopScanner() {
-
-  if (stream) {
-
-    stream
-      .getTracks()
-      .forEach(track => track.stop());
-  }
+function stop() {
+  stream?.getTracks().forEach(t => t.stop());
 }
 
-function parseDataMatrix(raw) {
-
-  let gtin = null;
-  let expiry = null;
-  let lot = null;
-
-  let i = 0;
-
-  while (i < raw.length) {
-
-    const ai = raw.substring(i, i + 2);
-
-    // GTIN
-    if (ai === "01") {
-      gtin = raw.substring(i + 2, i + 16);
-      i += 16;
-      continue;
-    }
-
-    // EXPIRY
-    if (ai === "17") {
-      expiry = raw.substring(i + 2, i + 8);
-      i += 8;
-      continue;
-    }
-
-    // LOT (corrigé proprement)
-    if (ai === "10") {
-
-      let start = i + 2;
-      let j = start;
-
-      while (j < raw.length) {
-
-        const nextAI = raw.substring(j, j + 2);
-
-        if (nextAI === "17" || nextAI === "01" || nextAI === "21") {
-          break;
-        }
-
-        j++;
-      }
-
-      lot = raw.substring(start, j);
-      i = j;
-      continue;
-    }
-
-    i++;
-  }
-
-  return { gtin, expiry, lot };
+function extractGTIN(raw) {
+  const m = raw.match(/01(\d{14})/);
+  return m ? m[1] : raw;
 }
 
-async function loadCachedProduct(data) {
+async function lookup(code) {
 
   try {
 
-    const code = data.cip13 || data.gtin;
+    elStatus.textContent = "Recherche...";
 
-    debugLog("=== LOOKUP START ===");
-    debugLog("SEARCH CODE:", code);
+    const res = await fetch(
+      BASE_URL + "&action=lookup&code=" + code
+    );
 
-    // URL lookup cache
-    const lookupUrl = BASE_URL + "&action=lookup&code=" + encodeURIComponent(code);
+    const data = await res.json();
 
-    debugLog("LOOKUP URL:", lookupUrl);
+    log("CACHE", data);
 
-    const response = await fetch(lookupUrl);
+    if (data.found) {
+      fill(data.product);
+      return;
+    }
 
-    debugLog("LOOKUP STATUS:", response.status);
+    const enrich = await fetch(
+      BASE_URL + "&action=enrich&code=" + code
+    );
 
-    const text = await response.text();
-    debugLog("RAW RESPONSE:", text);
-    
-    const result = JSON.parse(text);
+    const e = await enrich.json();
 
-    debugLog("LOOKUP RESULT:", result);
+    log("ENRICH", e);
 
-    // CACHE HIT
-    if (result && result.found) {
+    if (e.found) {
+      fill(e.product);
 
-      debugLog("CACHE FOUND");
-
-      document.getElementById("product").value =
-        result.product || "";
-
-      document.getElementById("comment").value =
-        result.comment || "";
-
-      if (data.expiry) {
-        fillExpiry(data.expiry);
-      }
-
-      statusEl.innerText =
-        "Produit trouvé cache";
+      await fetch(
+        BASE_URL +
+        "&action=saveCache&cip=" + code +
+        "&product=" + encodeURIComponent(e.product)
+      );
 
       return;
     }
 
-    // Remplace la recherche VIDAL par enrichissement online
-    const enrichUrl =
-      BASE_URL + "&action=enrich&code=" + encodeURIComponent(code);
-    
-    const enrichRes = await fetch(enrichUrl);
-    const enrichData = await enrichRes.json();
-    
-    debugLog("ENRICH RESULT:", enrichData);
-    
-    if (enrichData && enrichData.found) {
-    
-      document.getElementById("product").value =
-        enrichData.product;
-    
-      statusEl.innerText =
-        "Produit enrichi automatiquement";
-    
-      // 🔥 auto cache write possible ici ensuite
-      function saveToCache(cip13, product) {
-      
-        const sheet = SpreadsheetApp.getActive()
-          .getSheetByName("_CACHE_PRODUITS");
-      
-        sheet.appendRow([
-          cip13,
-          product,
-          new Date()
-        ]);
-      }
-      return;
-    }
-    debugLog("NOT FOUND ANYWHERE");
-
-    statusEl.innerText =
-      "Produit inconnu";
+    elStatus.textContent = "Produit inconnu";
 
   } catch (err) {
-
-    debugLog("FETCH ERROR:", err);
-
-    statusEl.innerText =
-      "Erreur de recherche : " + err.message;
+    log("ERROR", err);
+    elStatus.textContent = "Erreur réseau";
   }
 }
 
-function fillExpiry(expiry) {
-
-  // format GS1 : YYMMDD
-  const yy = expiry.substring(0,2);
-  const mm = expiry.substring(2,4);
-
-  const year = "20" + yy;
-
-  addDateField(mm + "-" + year);
+function fill(name) {
+  document.getElementById("product").value = name;
+  elStatus.textContent = "OK produit chargé";
 }
 
-function saveProduct() {
+function save() {
 
-  const dates =
-    Array
-      .from(document.querySelectorAll(".date"))
-      .map(el => el.value)
-      .filter(Boolean);
+  const dates = [...document.querySelectorAll(".date")]
+    .map(x => x.value)
+    .filter(Boolean);
 
-  const payload = {
-
+  log({
     code: scannedCode,
-
-    product:
-      document
-        .getElementById("product")
-        .value,
-
-    comment:
-      document
-        .getElementById("comment")
-        .value,
-
+    product: product.value,
+    comment: comment.value,
     dates
-  };
+  });
 
-  console.log(payload);
-
-  statusEl.innerText =
-    "Produit prêt à envoyer";
+  elStatus.textContent = "Enregistré (mock)";
 }
 
 </script>
