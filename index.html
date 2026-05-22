@@ -268,6 +268,14 @@ async function lookup(code) {
       
       document.getElementById("product").value = shortName;
 
+      await fetch(
+        BASE_URL +
+        "?action=saveCache" +
+        "&cip=" + encodeURIComponent(code) +
+        "&cis=" + encodeURIComponent(cis) +
+        "&product=" + encodeURIComponent(shortName)
+      );
+
       elStatus.textContent =
         "Produit trouvé BDPM";
 
@@ -293,20 +301,36 @@ function fill(name) {
   elStatus.textContent = "OK produit chargé";
 }
 
-function save() {
+async function save() {
 
-  const dates = [...document.querySelectorAll(".date")]
-    .map(x => x.value)
-    .filter(Boolean);
+  const dates =
+    [...document.querySelectorAll(".date")]
+      .map(x => x.value)
+      .filter(Boolean);
 
-  log({
-    code: scannedCode,
-    product: product.value,
-    comment: comment.value,
-    dates
+  const payload = new URLSearchParams({
+
+    action: "save",
+    product: document.getElementById("product").value,
+    comment: document.getElementById("comment").value,
+    cip13: scannedCode,
+    dates: JSON.stringify(dates)
   });
 
-  elStatus.textContent = "Enregistré (mock)";
+  const res =
+    await fetch(
+      BASE_URL + "?" + payload.toString()
+    );
+
+  const json =
+    await res.json();
+
+  log("SAVE RESULT", json);
+
+  elStatus.textContent =
+    json.success
+      ? "Produit enregistré"
+      : "Erreur enregistrement";
 }
 
 function json(obj) {
