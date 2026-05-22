@@ -83,7 +83,7 @@ video {
 
 <script>
 
-const BASE_URL = "https://weathered-meadow-4e1d.julien-groux.workers.dev";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbzfW1mzpj1UkXgKZH5kP4ws2U0b3BXTYmaERlMG68zmzDTfHm5-lfxg7zX0EqCCqT5F/exec";
 
 let cisMap = {};
 let cipMap = {};
@@ -309,7 +309,6 @@ async function save() {
       .filter(Boolean);
 
   const payload = new URLSearchParams({
-
     action: "save",
     product: document.getElementById("product").value,
     comment: document.getElementById("comment").value,
@@ -317,13 +316,14 @@ async function save() {
     dates: JSON.stringify(dates)
   });
 
-  const res =
-    await fetch(
-      BASE_URL + "?" + payload.toString()
-    );
+  const url =
+    BASE_URL + "?" + payload.toString();
 
-  const json =
-    await res.json();
+  log("SAVE URL", url);
+
+  const res = await fetch(url);
+
+  const json = await res.json();
 
   log("SAVE RESULT", json);
 
