@@ -148,8 +148,15 @@ document.getElementById("scanBtn").onclick = startScan;
 document.getElementById("addDate").onclick = () => addDate();
 document.getElementById("saveBtn").onclick = save;
 
-addDate();
 loadBdpm();
+
+function resetForm() {
+
+  document.getElementById("product").value = "";
+  document.getElementById("comment").value = "";
+
+  document.getElementById("dates").innerHTML = "";
+}
 
 function findDrugByCip(cip13) {
 
@@ -202,6 +209,7 @@ async function startScan() {
 
     clearInterval(interval);
     stop();
+    resetForm();
 
     const raw = codes[0].rawValue;
 
@@ -215,6 +223,8 @@ async function startScan() {
       const yy = expiry.substring(0,2);
       const mm = expiry.substring(2,4);
     
+      document.getElementById("dates").innerHTML = "";
+
       addDate(mm + "-20" + yy);
     
       log("EXPIRY :", expiry);
@@ -254,8 +264,9 @@ async function lookup(code) {
 
     if (product) {
 
-      document.getElementById("product").value =
-        product;
+      const shortName = product.split(",")[0].trim();
+      
+      document.getElementById("product").value = shortName;
 
       elStatus.textContent =
         "Produit trouvé BDPM";
