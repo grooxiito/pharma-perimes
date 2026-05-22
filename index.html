@@ -85,6 +85,9 @@ video {
 
 const BASE_URL = "https://weathered-meadow-4e1d.julien-groux.workers.dev";
 
+let cisMap = {};
+let cipMap = {};
+
 let stream;
 let scannedCode = "";
 
@@ -97,11 +100,75 @@ function log(...a) {
   ).join(" ");
 }
 
+async function loadBdpm() {
+
+  log("Chargement BDPM...");
+
+  // fichier présentations
+  const cipTxt =
+    await fetch("CIS_CIP_bdpm.txt")
+      .then(r => r.text());
+
+  // fichier spécialités
+  const cisTxt =
+    await fetch("CIS_bdpm.txt")
+      .then(r => r.text());
+
+  // CIP13 -> CIS
+  cipTxt.split("\n").forEach(line => {
+
+    const cols = line.trim().split("\t");
+
+    if (cols.length < 7) return;
+
+    const cis = cols[0];
+    const cip13 = cols[6];
+
+    cipMap[cip13] = cis;
+  });
+
+  // CIS -> DENOMINATION
+  cisTxt.split("\n").forEach(line => {
+
+    const cols = line.trim().split("\t");
+
+    if (cols.length < 2) return;
+
+    const cis = cols[0];
+    const denomination = cols[1];
+
+    cisMap[cis] = denomination;
+  });
+
+  log("CIP chargés :", Object.keys(cipMap).length);
+  log("CIS chargés :", Object.keys(cisMap).length);
+}
+
 document.getElementById("scanBtn").onclick = startScan;
 document.getElementById("addDate").onclick = () => addDate();
 document.getElementById("saveBtn").onclick = save;
 
 addDate();
+loadBdpm();
+
+function findDrugByCip(cip13) {
+
+  log("Recherche CIP13 :", cip13);
+
+  const cis = cipMap[cip13];
+
+  log("CIS trouvé :", cis);
+
+  if (!cis) {
+    return null;
+  }
+
+  const denomination = cisMap[cis];
+
+  log("Dénomination :", denomination);
+
+  return denomination || null;
+}
 
 function addDate(value = "") {
   const d = document.createElement("input");
@@ -138,6 +205,21 @@ async function startScan() {
 
     const raw = codes[0].rawValue;
 
+    const expiryMatch =
+      raw.match(/17(\d{6})/);
+    
+    if (expiryMatch) {
+    
+      const expiry = expiryMatch[1];
+    
+      const yy = expiry.substring(0,2);
+      const mm = expiry.substring(2,4);
+    
+      addDate(mm + "-20" + yy);
+    
+      log("EXPIRY :", expiry);
+    }
+
     log("RAW", raw);
 
     const gtin = extractGTIN(raw);
@@ -163,83 +245,35 @@ function extractGTIN(raw) {
 
 async function lookup(code) {
 
-  if (!code) {
-    log("CODE NULL OR UNDEFINED");
-    elStatus.textContent = "Code invalide";
-    return;
-  }
-  
   try {
 
-    elStatus.textContent = "Recherche...";
+    log("=== LOOKUP LOCAL ===");
 
-    log("CODE SENT:", code);
-    
-    const res = await fetch(
-      BASE_URL + "&action=lookup&code=" + code
-    );
+    const product =
+      findDrugByCip(code);
 
-    const text = await res.text();
-    log("LOOKUP RAW:", text);
+    if (product) {
 
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      log("LOOKUP JSON ERROR:", e.message);
-      elStatus.textContent = "Backend invalide (lookup)";
-      return;
-    }
+      document.getElementById("product").value =
+        product;
 
-    log("CACHE", data);
-
-    if (data.found) {
-      fill(data.product);
-      return;
-    }
-
-    const enrichRes = await fetch(
-      BASE_URL + "&action=enrich&code=" + code
-    );
-
-    const enrichText = await enrichRes.text();
-    log("ENRICH RAW:", enrichText);
-
-    let e;
-    try {
-      e = JSON.parse(enrichText);
-    } catch (err) {
-      log("ENRICH JSON ERROR:", err.message);
-      elStatus.textContent = "Backend invalide (enrich)";
-      return;
-    }
-
-    log("ENRICH", e);
-
-    if (e.found) {
-      fill(e.product);
-
-      await fetch(
-        BASE_URL +
-        "&action=saveCache&cip=" + code +
-        "&product=" + encodeURIComponent(e.product)
-      );
+      elStatus.textContent =
+        "Produit trouvé BDPM";
 
       return;
     }
 
-    elStatus.textContent = "Produit inconnu";
+    log("CIP non trouvé dans BDPM");
 
-  } catch (err) {
-
-    console.error("FATAL ERROR OBJECT:", err);
-  
-    log("FATAL ERROR NAME:", err?.name);
-    log("FATAL ERROR MESSAGE:", err?.message);
-    log("FATAL ERROR STACK:", err?.stack);
-  
     elStatus.textContent =
-      "Erreur: " + (err?.message || "inconnue");
+      "Produit inconnu";
+
+  } catch(err) {
+
+    log("ERROR", err);
+
+    elStatus.textContent =
+      "Erreur";
   }
 }
 
