@@ -260,56 +260,44 @@ async function lookup(code) {
 
     log("=== LOOKUP LOCAL ===");
 
-    const product =
-      findDrugByCip(code);
+    const product = findDrugByCip(code);
+    const cis = cipMap[code];
+
+    let shortName = "EAN13_UNKNOWN";
 
     if (product) {
+      shortName = product.split(",")[0].trim();
 
-      const cis = cipMap[code];
+      document.getElementById("product").value = shortName;
+      elStatus.textContent = "Produit trouvé BDPM";
 
-      const shortName =
-        product.split(",")[0].trim();
-
-      document.getElementById("product").value =
-        shortName;
-
-      log("SAVE CACHE", {
-        cip: code,
-        cis: cis,
-        product: shortName
-      });
-
-      const cacheRes =
-        await fetch(
-          BASE_URL +
-          "?action=saveCache" +
-          "&cip=" + encodeURIComponent(code) +
-          "&cis=" + encodeURIComponent(cis) +
-          "&product=" + encodeURIComponent(shortName)
-        );
-
-      const cacheJson =
-        await cacheRes.json();
-
-      log("CACHE RESULT", cacheJson);
-
-      elStatus.textContent =
-        "Produit trouvé BDPM";
-
-      return;
+    } else {
+      elStatus.textContent = "Produit inconnu";
     }
 
-    log("CIP non trouvé dans BDPM");
+    log("SAVE CACHE", {
+      cip: code,
+      cis,
+      product: shortName
+    });
 
-    elStatus.textContent =
-      "Produit inconnu";
+    const cacheRes = await fetch(
+      BASE_URL +
+      "?action=saveCache" +
+      "&cip=" + encodeURIComponent(code) +
+      "&cis=" + encodeURIComponent(cis || "") +
+      "&product=" + encodeURIComponent(shortName)
+    );
 
-  } catch(err) {
+    const cacheJson = await cacheRes.json();
+    log("CACHE RESULT", cacheJson);
+
+    return;
+
+  } catch (err) {
 
     log("ERROR", err);
-
-    elStatus.textContent =
-      "Erreur";
+    elStatus.textContent = "Erreur";
   }
 }
 
