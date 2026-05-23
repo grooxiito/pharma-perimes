@@ -84,7 +84,7 @@ video {
 <script>
 
 // url Apps Script à changer à chaque déploiement
-const BASE_URL = "https://script.google.com/macros/s/AKfycbyvgzVXgN8I7Pgd-agHC7TjFnEMbfO1zdAgs0zFlGJpOZZ_ZDSbOIrZAM7uZ7uQefOI/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbz5O-UqwZDpOCyPAKIkLlehevatIFq41hlyms-yXmIGiOlTe-0s5KG5kGDf1gSTi7qL/exec";
 
 let cisMap = {};
 let cipMap = {};
@@ -281,6 +281,41 @@ async function lookup(code) {
 
       } catch (e) {
         log("CACHE LOOKUP ERROR", e);
+      }
+    }
+
+    // fallback VIDAL si BDPM + CACHE KO
+    if (!product) {
+    
+      try {
+    
+        log("LOOKUP VIDAL");
+    
+        const res = await fetch(
+          BASE_URL +
+          "?action=lookupVidal&cip=" +
+          encodeURIComponent(code)
+        );
+    
+        const json = await res.json();
+    
+        if (json.found) {
+    
+          product = json.product;
+    
+          log("VIDAL FOUND", {
+            product: product,
+            url: json.url
+          });
+    
+        } else {
+    
+          log("VIDAL NOT FOUND");
+        }
+    
+      } catch (e) {
+    
+        log("VIDAL ERROR", e);
       }
     }
 
