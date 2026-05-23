@@ -84,7 +84,7 @@ video {
 <script>
 
 // url Apps Script à changer à chaque déploiement
-const BASE_URL = "https://script.google.com/macros/s/AKfycbz5O-UqwZDpOCyPAKIkLlehevatIFq41hlyms-yXmIGiOlTe-0s5KG5kGDf1gSTi7qL/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbzL9VP_ST3_tLxzz5U0fgKWR85_MwJIIkHB7mbcJQWQipPCm5QTl-ti_o5bm4RIe5kp/exec";
 
 let cisMap = {};
 let cipMap = {};
@@ -254,7 +254,8 @@ function extractGTIN(raw) {
   return m ? m[1] : raw;
 }
 
-async function lookup(code) {
+// ancienne OK sauf vidal
+async function lookup00(code) {
 
   try {
 
@@ -343,6 +344,90 @@ async function lookup(code) {
   } catch (err) {
 
     log("ERROR", err);
+    elStatus.textContent = "Erreur scan";
+  }
+}
+
+// nouvelle TEST
+async function lookup(code) {
+
+  try {
+
+    log("=== LOOKUP LOCAL ===");
+
+    let product = findDrugByCip(code);
+    const cis = cipMap[code];
+
+    // 1. CACHE fallback
+    if (!product) {
+
+      try {
+
+        const res = await fetch(
+          BASE_URL +
+          "?action=lookupCache&cip=" +
+          encodeURIComponent(code)
+        );
+
+        const json = await res.json();
+
+        if (json.found) {
+          product = json.product;
+        }
+
+      } catch (e) {
+        log("CACHE ERROR", e);
+      }
+    }
+
+    // 2. VIDAL fallback
+    if (!product) {
+
+      try {
+
+        log("LOOKUP VIDAL");
+
+        const res = await fetch(
+          BASE_URL +
+          "?action=lookupVidal&cip=" +
+          encodeURIComponent(code)
+        );
+
+        const json = await res.json();
+
+        log("VIDAL RESPONSE", json);
+
+        if (json.found) {
+          product = json.product;
+        }
+
+      } catch (e) {
+        log("VIDAL ERROR", e);
+      }
+    }
+
+    // 3. final UI
+    const shortName =
+      product
+        ? product.split(",")[0].trim()
+        : "";
+
+    if (shortName) {
+      document.getElementById("product").value = shortName;
+    }
+
+    elStatus.textContent =
+      shortName ? "Produit trouvé" : "Produit inconnu";
+
+    log("FINAL RESULT", {
+      cip: code,
+      cis,
+      product: shortName
+    });
+
+  } catch (err) {
+
+    log("ERROR LOOKUP", err);
     elStatus.textContent = "Erreur scan";
   }
 }
