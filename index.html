@@ -269,10 +269,13 @@ async function lookup(code) {
       manualName ||
       (product ? product.split(",")[0].trim() : "EAN13_UNKNOWN");
 
+    if (product) {
+
       document.getElementById("product").value = shortName;
       elStatus.textContent = "Produit trouvé BDPM";
 
     } else {
+
       elStatus.textContent = "Produit inconnu";
     }
 
