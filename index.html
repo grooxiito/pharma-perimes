@@ -263,45 +263,28 @@ async function lookup(code) {
     const product = findDrugByCip(code);
     const cis = cipMap[code];
 
-    const manualName = document.getElementById("product").value.trim();
+    let shortName =
+      product
+        ? product.split(",")[0].trim()
+        : "EAN13_UNKNOWN";
 
-    const shortName =
-      manualName ||
-      (product ? product.split(",")[0].trim() : "EAN13_UNKNOWN");
+    // préremplissage UI uniquement
+    document.getElementById("product").value = shortName;
+    elStatus.textContent =
+      product ? "Produit trouvé BDPM" : "Produit inconnu";
 
-    if (product) {
-
-      document.getElementById("product").value = shortName;
-      elStatus.textContent = "Produit trouvé BDPM";
-
-    } else {
-
-      elStatus.textContent = "Produit inconnu";
-    }
-
-    log("SAVE CACHE", {
+    log("SCAN RESULT", {
       cip: code,
       cis,
       product: shortName
     });
-
-    const cacheRes = await fetch(
-      BASE_URL +
-      "?action=saveCache" +
-      "&cip=" + encodeURIComponent(code) +
-      "&cis=" + encodeURIComponent(cis || "") +
-      "&product=" + encodeURIComponent(shortName)
-    );
-
-    const cacheJson = await cacheRes.json();
-    log("CACHE RESULT", cacheJson);
 
     return;
 
   } catch (err) {
 
     log("ERROR", err);
-    elStatus.textContent = "Erreur";
+    elStatus.textContent = "Erreur scan";
   }
 }
 
@@ -312,34 +295,59 @@ function fill(name) {
 
 async function save() {
 
-  const dates =
-    [...document.querySelectorAll(".date")]
-      .map(x => x.value)
-      .filter(Boolean);
+  try {
 
-  const payload = new URLSearchParams({
-    action: "save",
-    product: document.getElementById("product").value,
-    comment: document.getElementById("comment").value,
-    cip13: scannedCode,
-    dates: JSON.stringify(dates)
-  });
+    const productInput =
+      document.getElementById("product").value.trim();
 
-  const url =
-    BASE_URL + "?" + payload.toString();
+    const comment =
+      document.getElementById("comment").value.trim();
 
-  log("SAVE URL", url);
+    const dates =
+      [...document.querySelectorAll(".date")]
+        .map(x => x.value)
+        .filter(Boolean);
 
-  const res = await fetch(url);
+    // 1. SAVE fiche mois-année (inchangé)
+    const payload = new URLSearchParams({
+      action: "save",
+      product: productInput,
+      comment,
+      cip13: scannedCode,
+      dates: JSON.stringify(dates)
+    });
 
-  const json = await res.json();
+    const url = BASE_URL + "?" + payload.toString();
 
-  log("SAVE RESULT", json);
+    log("SAVE URL", url);
 
-  elStatus.textContent =
-    json.success
-      ? "Produit enregistré"
-      : "Erreur enregistrement";
+    const res = await fetch(url);
+    const json = await res.json();
+
+    log("SAVE RESULT", json);
+
+    // 2. SAVE CACHE (nouveau point central)
+    const cacheRes = await fetch(
+      BASE_URL +
+      "?action=saveCache" +
+      "&cip=" + encodeURIComponent(scannedCode) +
+      "&cis=" + encodeURIComponent(cipMap[scannedCode] || "") +
+      "&product=" + encodeURIComponent(productInput)
+    );
+
+    const cacheJson = await cacheRes.json();
+    log("CACHE RESULT", cacheJson);
+
+    elStatus.textContent =
+      json.success
+        ? "Produit enregistré"
+        : "Erreur enregistrement";
+
+  } catch (err) {
+
+    log("ERROR SAVE", err);
+    elStatus.textContent = "Erreur";
+  }
 }
 
 function json(obj) {
