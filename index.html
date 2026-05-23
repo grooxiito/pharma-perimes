@@ -263,10 +263,11 @@ async function lookup(code) {
     const product = findDrugByCip(code);
     const cis = cipMap[code];
 
-    let shortName = "EAN13_UNKNOWN";
+    const manualName = document.getElementById("product").value.trim();
 
-    if (product) {
-      shortName = product.split(",")[0].trim();
+    const shortName =
+      manualName ||
+      (product ? product.split(",")[0].trim() : "EAN13_UNKNOWN");
 
       document.getElementById("product").value = shortName;
       elStatus.textContent = "Produit trouvé BDPM";
