@@ -260,18 +260,42 @@ async function lookup(code) {
 
     log("=== LOOKUP LOCAL ===");
 
-    const product = findDrugByCip(code);
+    let product = findDrugByCip(code);
     const cis = cipMap[code];
 
-    let shortName =
+    // fallback cache serveur si BDPM KO
+    if (!product) {
+
+      try {
+
+        const res = await fetch(
+          BASE_URL +
+          "?action=lookupCache&cip=" + encodeURIComponent(code)
+        );
+
+        const json = await res.json();
+
+        if (json.found) {
+          product = json.product;
+        }
+
+      } catch (e) {
+        log("CACHE LOOKUP ERROR", e);
+      }
+    }
+
+    const shortName =
       product
         ? product.split(",")[0].trim()
-        : "EAN13_UNKNOWN";
+        : "";
 
-    // préremplissage UI uniquement
-    document.getElementById("product").value = shortName;
+    // UNE SEULE SOURCE UI (important)
+    if (shortName) {
+      document.getElementById("product").value = shortName;
+    }
+
     elStatus.textContent =
-      product ? "Produit trouvé BDPM" : "Produit inconnu";
+      shortName ? "Produit trouvé" : "Produit inconnu";
 
     log("SCAN RESULT", {
       cip: code,
@@ -287,7 +311,7 @@ async function lookup(code) {
     elStatus.textContent = "Erreur scan";
   }
 }
-
+  
 function fill(name) {
   document.getElementById("product").value = name;
   elStatus.textContent = "OK produit chargé";
