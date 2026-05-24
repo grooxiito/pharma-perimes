@@ -356,7 +356,6 @@ ou tout autre serveur web.
 
 - Export PDF
 - Impression des listes
-- Statistiques mensuelles
 
 ## Version 2.0
 
