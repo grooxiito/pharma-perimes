@@ -42,8 +42,30 @@ video {
   margin-top: 10px;
   border-radius: 10px;
   background: black;
+  max-height:250px;
+  object-fit:cover;
 }
 
+.expired {
+  background:#ffebee;
+  color:#c62828;
+  border:2px solid #c62828;
+  padding:10px;
+  border-radius:8px;
+}
+
+#expiredWarning {
+  display:none;
+  margin-top:10px;
+  padding:12px;
+  background:#ffebee;
+  color:#c62828;
+  border:2px solid #c62828;
+  border-radius:8px;
+  font-weight:bold;
+  text-align:center;
+}
+  
 #status {
   margin-top: 12px;
   font-weight: bold;
@@ -78,6 +100,10 @@ video {
 <button id="addDate">+ Ajouter date</button>
 <button id="saveBtn">Enregistrer</button>
 
+<div id="expiredWarning" style="display:none;">
+  ⛔ PRODUIT PÉRIMÉ
+</div>
+  
 <div id="status"></div>
 <pre id="debug"></pre>
 
@@ -91,6 +117,7 @@ let cipMap = {};
 
 let stream;
 let scannedCode = "";
+let productExpired = false;
 
 const elStatus = document.getElementById("status");
 const elDebug = document.getElementById("debug");
@@ -151,12 +178,27 @@ document.getElementById("saveBtn").onclick = save;
 
 loadBdpm();
 
-function resetForm() {
+function resetForm00() {
 
   document.getElementById("product").value = "";
   document.getElementById("comment").value = "";
 
   document.getElementById("dates").innerHTML = "";
+}
+
+function resetForm() {
+
+  productExpired = false;
+
+  document.getElementById("product").value = "";
+  document.getElementById("comment").value = "";
+
+  document.getElementById("dates").innerHTML = "";
+
+  document.getElementById("saveBtn").disabled = false;
+
+  document.getElementById("expiredWarning")
+    .style.display = "none";
 }
 
 function findDrugByCip(cip13) {
@@ -186,6 +228,28 @@ function addDate(value = "") {
   document.getElementById("dates").appendChild(d);
 }
 
+function isExpired(mmYYYY) {
+
+  const [month, year] =
+    mmYYYY.split("-").map(Number);
+
+  const now = new Date();
+
+  const currentMonth =
+    now.getMonth() + 1;
+
+  const currentYear =
+    now.getFullYear();
+
+  return (
+    year < currentYear ||
+    (
+      year === currentYear &&
+      month <= currentMonth
+    )
+  );
+}
+  
 async function startScan() {
 
   elStatus.textContent = "Autorisation caméra...";
@@ -227,6 +291,21 @@ async function startScan() {
       document.getElementById("dates").innerHTML = "";
 
       addDate(mm + "-20" + yy);
+
+      const expiryDate =
+        mm + "-20" + yy;
+      
+      productExpired =
+        isExpired(expiryDate);
+      
+      document.getElementById("saveBtn")
+        .disabled = productExpired;
+      
+      document.getElementById("expiredWarning")
+        .style.display =
+          productExpired
+            ? "block"
+            : "none";
     
       log("EXPIRY :", expiry);
     }
@@ -348,7 +427,7 @@ async function lookup00(code) {
   }
 }
 
-// nouvelle TEST
+// nouvelle TEST ok 26-05
 async function lookup(code) {
 
   try {
@@ -416,8 +495,18 @@ async function lookup(code) {
       document.getElementById("product").value = shortName;
     }
 
-    elStatus.textContent =
-      shortName ? "Produit trouvé" : "Produit inconnu";
+    if (productExpired) {
+    
+      elStatus.textContent =
+        "⛔ Produit périmé";
+    
+    } else {
+    
+      elStatus.textContent =
+        shortName
+          ? "Produit trouvé"
+          : "Produit inconnu";
+    }
 
     log("FINAL RESULT", {
       cip: code,
