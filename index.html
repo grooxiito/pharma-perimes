@@ -495,10 +495,13 @@ async function lookup(code) {
     }
 
     // 3. final UI
-    const shortName =
+    const shortName00 =
       product
         ? product.split(",")[0].trim()
         : "";
+    
+    const shortName =
+      product.replace(/,\s[^,]+$/, "");
 
     if (shortName) {
       document.getElementById("product").value = shortName;
