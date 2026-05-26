@@ -263,8 +263,7 @@ async function startScan() {
 
     resetForm();
 
-    elStatus.textContent =
-      "Autorisation caméra...";
+    elStatus.textContent = "Ouverture caméra...";
 
     codeReader =
       new ZXing.BrowserMultiFormatReader();
@@ -272,32 +271,33 @@ async function startScan() {
     await codeReader.decodeFromVideoDevice(
       null,
       "video",
-      async (result, err) => {
+      (result, err) => {
 
-        if (!result) return;
+        if (result) {
 
-        const raw =
-          result.getText();
+          const raw =
+            result.getText();
 
-        codeReader.reset();
+          log("RAW", raw);
 
-        stop();
+          codeReader.reset();
+          stop();
 
-        log("RAW", raw);
+          handleScanResult(raw);
+        }
 
-        handleScanResult(raw);
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+          log("ZXING ERROR DETAIL", err);
+        }
       }
     );
 
-    elStatus.textContent =
-      "Scan actif";
+    elStatus.textContent = "Scan actif";
 
   } catch (err) {
 
-    log("ZXING ERROR", err);
-
-    elStatus.textContent =
-      "Erreur caméra";
+    log("ZXING ERROR GLOBAL", err);
+    elStatus.textContent = "Erreur caméra ZXing";
   }
 }
 
@@ -449,13 +449,13 @@ async function startScan00() {
 function stop() {
 
   try {
-
     codeReader?.reset();
+  } catch (e) {}
 
-  } catch(e) {}
-
-  stream?.getTracks()
-    .forEach(t => t.stop());
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+  }
 }
   
 // stop ok avec BarcodeDetector avant passage ZXing
