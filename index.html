@@ -107,6 +107,9 @@ video {
 <div id="status"></div>
 <pre id="debug"></pre>
 
+// import pour ZXing
+<script src="https://unpkg.com/@zxing/browser@latest"></script>
+
 <script>
 
 // url Apps Script à changer à chaque déploiement
@@ -118,6 +121,7 @@ let cipMap = {};
 let stream;
 let scannedCode = "";
 let productExpired = false;
+let codeReader;
 
 const elStatus = document.getElementById("status");
 const elDebug = document.getElementById("debug");
@@ -252,8 +256,117 @@ function isExpired(mmYYYY) {
     )
   );
 }
-  
+
+// scan avec ZXing pour meilleure compatibilité
 async function startScan() {
+
+  try {
+
+    resetForm();
+
+    elStatus.textContent =
+      "Autorisation caméra...";
+
+    codeReader =
+      new ZXing.BrowserMultiFormatReader();
+
+    await codeReader.decodeFromVideoDevice(
+      null,
+      "video",
+      async (result, err) => {
+
+        if (!result) return;
+
+        const raw =
+          result.getText();
+
+        codeReader.reset();
+
+        stop();
+
+        log("RAW", raw);
+
+        handleScanResult(raw);
+      }
+    );
+
+    elStatus.textContent =
+      "Scan actif";
+
+  } catch (err) {
+
+    log("ZXING ERROR", err);
+
+    elStatus.textContent =
+      "Erreur caméra";
+  }
+}
+
+async function handleScanResult(raw) {
+
+  const expiryMatch =
+    raw.match(/17(\d{6})/);
+
+  if (expiryMatch) {
+
+    const expiry =
+      expiryMatch[1];
+
+    const yy =
+      expiry.substring(0, 2);
+
+    const mm =
+      expiry.substring(2, 4);
+
+    document.getElementById("dates")
+      .innerHTML = "";
+
+    addDate(
+      mm + "-20" + yy
+    );
+
+    const expiryDate =
+      mm + "-20" + yy;
+
+    productExpired =
+      isExpired(expiryDate);
+
+    document.getElementById("saveBtn")
+      .disabled =
+        productExpired;
+
+    document.getElementById("saveBtn")
+      .style.display =
+        productExpired
+          ? "none"
+          : "block";
+
+    document.getElementById("expiredWarning")
+      .style.display =
+        productExpired
+          ? "block"
+          : "none";
+
+    log("EXPIRY", expiry);
+  }
+
+  const gtin =
+    extractGTIN(raw);
+
+  const cip13 =
+    gtin?.startsWith("0")
+      ? gtin.slice(1)
+      : gtin;
+
+  scannedCode = cip13;
+
+  log("CIP13", cip13);
+
+  await lookup(cip13);
+}
+  
+// avec BarcodeDetector OK - avant passage ZXing  
+async function startScan00() {
 
   elStatus.textContent = "Autorisation caméra...";
 
@@ -333,7 +446,21 @@ async function startScan() {
   }, 400);
 }
 
+// nouveau stop pour ZXing  
 function stop() {
+
+  try {
+
+    codeReader?.reset();
+
+  } catch(e) {}
+
+  stream?.getTracks()
+    .forEach(t => t.stop());
+}
+  
+// stop ok avec BarcodeDetector avant passage ZXing
+function stop00() {
   stream?.getTracks().forEach(t => t.stop());
 }
 
