@@ -92,6 +92,10 @@ video {
 
 <video id="video" autoplay playsinline></video>
 
+<div id="expiredWarning" style="display:none;">
+  ⛔ PRODUIT PÉRIMÉ
+</div>
+  
 <input id="product" placeholder="Nom produit">
 <input id="comment" placeholder="Commentaire">
 
@@ -99,10 +103,6 @@ video {
 
 <button id="addDate">+ Ajouter date</button>
 <button id="saveBtn">Enregistrer</button>
-
-<div id="expiredWarning" style="display:none;">
-  ⛔ PRODUIT PÉRIMÉ
-</div>
   
 <div id="status"></div>
 <pre id="debug"></pre>
@@ -300,6 +300,12 @@ async function startScan() {
       
       document.getElementById("saveBtn")
         .disabled = productExpired;
+
+      document.getElementById("saveBtn")
+        .style.display =
+          productExpired
+            ? "none"
+            : "block";
       
       document.getElementById("expiredWarning")
         .style.display =
