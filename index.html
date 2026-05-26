@@ -107,7 +107,7 @@ video {
 <div id="status"></div>
 <pre id="debug"></pre>
 
-<script src="https://unpkg.com/@zxing/browser@0.2.0/umd/zxing-browser.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@latest"></script>
 
 <script>
 
@@ -259,6 +259,9 @@ function isExpired(mmYYYY) {
 // scan avec ZXing pour meilleure compatibilité
 async function startScan() {
 
+  console.log("ZXing object:", ZXing);
+  console.log("ZXing keys:", Object.keys(ZXing || {}));
+
   try {
 
     resetForm();
@@ -295,8 +298,14 @@ async function startScan() {
     elStatus.textContent = "Scan actif";
 
   } catch (err) {
-
-    log("ZXING ERROR GLOBAL", err);
+  
+    console.log("ZXING ERROR GLOBAL FULL OBJECT:", err);
+  
+    alert(
+      "ZXING ERROR: " +
+      (err?.message || err)
+    );
+  
     elStatus.textContent = "Erreur caméra ZXing";
   }
 }
