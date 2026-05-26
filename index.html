@@ -405,10 +405,13 @@ async function lookup00(code) {
       }
     }
 
-    const shortName =
+    const shortName00 =
       product
         ? product.split(", ")[0].trim()
         : "";
+
+    const shortName =
+      product.replace(/,\s[^,]+$/, "");
 
     // UNE SEULE SOURCE UI (important)
     if (shortName) {
