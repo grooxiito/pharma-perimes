@@ -90,6 +90,12 @@ video {
 
 <button id="scanBtn">Scanner produit</button>
 
+<button
+  id="hardScanBtn"
+  style="display:none;background:#d32f2f;">
+  ⚠️ Datamatrix difficile
+</button>
+
 <video id="video" autoplay playsinline></video>
 
 <div id="expiredWarning" style="display:none;">
@@ -121,6 +127,7 @@ let stream;
 let scannedCode = "";
 let productExpired = false;
 let codeReader;
+let hardScanTimeout;
 
 const elStatus = document.getElementById("status");
 const elDebug = document.getElementById("debug");
@@ -176,6 +183,7 @@ async function loadBdpm() {
 }
 
 document.getElementById("scanBtn").onclick = startScan;
+document.getElementById("hardScanBtn").onclick = startHardScan;
 document.getElementById("addDate").onclick = () => addDate();
 document.getElementById("saveBtn").onclick = save;
 
@@ -262,6 +270,8 @@ async function startScan() {
   console.log("ZXing object:", ZXing);
   console.log("ZXing keys:", Object.keys(ZXing || {}));
 
+  document.getElementById("hardScanBtn").style.display = "none";
+
   try {
 
     resetForm();
@@ -278,6 +288,11 @@ async function startScan() {
 
         if (result) {
 
+          clearTimeout(hardScanTimeout);
+
+          document.getElementById("hardScanBtn")
+            .style.display = "none";
+          
           const raw =
             result.getText();
 
@@ -296,6 +311,11 @@ async function startScan() {
     );
 
     elStatus.textContent = "Scan actif";
+    
+    hardScanTimeout = setTimeout(() => {
+      document.getElementById("hardScanBtn")
+        .style.display = "block";
+    }, 15000);
 
   } catch (err) {
   
@@ -307,6 +327,63 @@ async function startScan() {
     );
   
     elStatus.textContent = "Erreur caméra ZXing";
+  }
+}
+
+async function startHardScan() {
+
+  try {
+
+    resetForm();
+
+    elStatus.textContent =
+      "Mode scan robuste...";
+
+    document.getElementById("hardScanBtn")
+      .style.display = "none";
+
+    const hints = new Map();
+
+    hints.set(
+      ZXing.DecodeHintType.TRY_HARDER,
+      true
+    );
+
+    hints.set(
+      ZXing.DecodeHintType.POSSIBLE_FORMATS,
+      [ZXing.BarcodeFormat.DATA_MATRIX]
+    );
+
+    codeReader =
+      new ZXing.BrowserMultiFormatReader(
+        hints
+      );
+
+    await codeReader.decodeFromVideoDevice(
+      null,
+      "video",
+      (result, err) => {
+
+        if (result) {
+
+          const raw =
+            result.getText();
+
+          log("RAW HARD", raw);
+
+          stop();
+
+          handleScanResult(raw);
+        }
+      }
+    );
+
+  } catch (err) {
+
+    log("HARD SCAN ERROR", err);
+
+    elStatus.textContent =
+      "Erreur scan robuste";
   }
 }
 
