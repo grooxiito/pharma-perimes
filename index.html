@@ -190,6 +190,16 @@ document.getElementById("hardScanBtn").onclick = startHardScan;
 document.getElementById("addDate").onclick = () => addDate();
 document.getElementById("saveBtn").onclick = save;
 
+document.addEventListener(
+  "visibilitychange",
+  () => {
+    if (document.hidden) {
+      log("PAGE HIDDEN -> STOP CAMERA");
+      stop();
+    }
+  }
+);
+
 loadBdpm();
 
 function resetForm00() {
