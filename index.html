@@ -130,6 +130,7 @@ let codeReader;
 
 let hardScanTimeout;
 let currentControls = null;
+let activeStream = null;
 
 const elStatus = document.getElementById("status");
 const elDebug = document.getElementById("debug");
@@ -280,6 +281,9 @@ async function startScan() {
 
     elStatus.textContent = "Ouverture caméra...";
 
+    const video =
+      document.getElementById("video");
+    
     codeReader =
       new ZXing.BrowserMultiFormatReader();
 
@@ -312,6 +316,8 @@ async function startScan() {
         }
       }
     );
+
+    activeStream = video.srcObject;
 
     elStatus.textContent = "Scan actif";
     
@@ -381,6 +387,10 @@ async function startHardScan() {
         }
       }
     );
+    
+    activeStream =
+      document.getElementById("video")
+        .srcObject;
 
   } catch (err) {
 
@@ -538,6 +548,8 @@ async function startScan00() {
 // nouveau stop pour ZXing + tryHarder
 function stop() {
 
+  log("STOP CAMERA");
+
   try {
 
     clearTimeout(hardScanTimeout);
@@ -558,27 +570,44 @@ function stop() {
 
   try {
 
-    const video =
-      document.getElementById("video");
+    if (activeStream) {
 
-    const stream =
-      video.srcObject;
-
-    if (stream) {
-
-      stream.getTracks()
+      activeStream
+        .getTracks()
         .forEach(track => {
 
           track.stop();
 
+          log(
+            "TRACK STOPPED",
+            track.kind
+          );
         });
 
-      video.srcObject = null;
+      activeStream = null;
     }
+
+  } catch(e) {
+
+    log("STREAM STOP ERROR", e);
+  }
+
+  try {
+
+    const video =
+      document.getElementById("video");
+
+    video.pause();
+
+    video.srcObject = null;
+
+    video.removeAttribute("src");
+
+    video.load();
 
   } catch(e) {}
 
-  log("SCAN STOPPED");
+  log("CAMERA FULLY STOPPED");
 }
   
 // stop ok avec BarcodeDetector avant passage ZXing
