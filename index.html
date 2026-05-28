@@ -403,7 +403,13 @@ function updateExpiryState() {
 
       input.style.background = "";
 
-      if (!value) return;
+      const isValidDate = /^\d{2}-\d{4}$/.test(value);
+
+      if (!isValidDate) {
+        warning.style.display = "none";
+        input.style.background = "";
+        return;
+      }
 
       const parts = value.split("-");
 
