@@ -355,14 +355,14 @@ function isExpired(mmYYYY) {
 // analyse des dates de péremption en fonction de la date actuelle
 function updateExpiryState() {
 
-  log("=== UPDATE EXPIRY STATE ===");
+  // log("=== UPDATE EXPIRY STATE ===");
 
   const saveBtn =
     document.getElementById(
       "saveBtn"
     );
 
-  log("CHECK DATES COUNT =", document.querySelectorAll(".dateWrapper").length);
+  // log("CHECK DATES COUNT =", document.querySelectorAll(".dateWrapper").length);
 
   const now = new Date();
 
@@ -380,8 +380,6 @@ function updateExpiryState() {
   const offset =
     currentDay > 20 ? 1 : 0;
 
-  let blockSave = false;
-
   document
     .querySelectorAll(".dateWrapper")
     .forEach(wrapper => {
@@ -397,7 +395,7 @@ function updateExpiryState() {
       const value =
         input.value.trim();
 
-      log("DATE RAW =", value);
+      // log("DATE RAW =", value);
 
       warning.style.display = "none";
 
@@ -418,7 +416,7 @@ function updateExpiryState() {
       const month = Number(parts[0]);
       const year = Number(parts[1]);
 
-      log("PARSED DATE =", { month, year });
+      // log("PARSED DATE =", { month, year });
       
       if (isNaN(month) || isNaN(year)) return;
 
@@ -433,7 +431,7 @@ function updateExpiryState() {
       // ROUGE
       if (diffMonths <= offset) {
 
-        log("🔴 RED ZONE", { value, diffMonths, offset });
+        // log("🔴 RED ZONE", { value, diffMonths, offset });
 
         input.style.background =
           "#ffb3b3";
@@ -450,8 +448,6 @@ function updateExpiryState() {
         warning.textContent =
           "⛔ Produit périmé ou trop proche";
 
-        blockSave = true;
-
         return;
       }
 
@@ -460,7 +456,7 @@ function updateExpiryState() {
         diffMonths === offset + 1
       ) {
 
-        log("🟠 ORANGE ZONE", { value, diffMonths, offset });
+        // log("🟠 ORANGE ZONE", { value, diffMonths, offset });
 
         input.style.background =
           "#ffd699";
@@ -476,8 +472,6 @@ function updateExpiryState() {
 
         warning.textContent =
           "⚠️ Produit bientôt périmé : à mettre de côté";
-
-        blockSave = true;
 
         return;
       }
@@ -506,9 +500,7 @@ function updateExpiryState() {
       }
     });
 
-  log("BLOCKSAVE =", blockSave);
-
-  saveBtn.disabled = blockSave;
+  saveBtn.disabled = false;
 }
 
 // scan avec ZXing pour meilleure compatibilité
