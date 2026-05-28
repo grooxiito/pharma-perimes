@@ -39,7 +39,7 @@ input {
 
 video {
   width: 100%;
-  margin-top: 10px;
+  /*margin-top: 10px;*/
   border-radius: 10px;
   background: black;
   max-height:220px;
@@ -81,6 +81,13 @@ video {
   overflow: auto;
   border-radius: 10px;
 }
+
+#videoContainer {
+  position: relative;
+  width: 100%;
+  margin-top: 10px;
+  display: none;
+}
   
 #scanOverlay {
   position: absolute;
@@ -93,6 +100,7 @@ video {
   border-radius: 16px;
   pointer-events: none;
   box-shadow: 0 0 0 9999px rgba(0,0,0,0.35);
+  display: none;
 }
   
 </style>
@@ -111,7 +119,7 @@ video {
 </button>
 
 <!--<video id="video" autoplay playsinline></video>-->
-<div style="position:relative">
+<div id="videoContainer">
   <video id="video" autoplay playsinline></video>
   <div id="scanOverlay"></div>
 </div>
@@ -341,6 +349,12 @@ async function startScan() {
 
     activeStream = video.srcObject;
 
+    document.getElementById("videoContainer")
+      .style.display = "block";
+    
+    document.getElementById("scanOverlay")
+      .style.display = "block";
+
     elStatus.textContent = "Scan actif";
     
     hardScanTimeout = setTimeout(() => {
@@ -369,6 +383,12 @@ async function startHardScan() {
   try {
 
     resetForm();
+
+    document.getElementById("videoContainer")
+      .style.display = "block";
+    
+    document.getElementById("scanOverlay")
+      .style.display = "block";
 
     elStatus.textContent =
       "Mode scan robuste...";
@@ -664,6 +684,12 @@ function stop() {
   log("CAMERA FULLY STOPPED");
   codeReader = null;
   currentControls = null;
+
+  document.getElementById("scanOverlay")
+    .style.display = "none";
+  
+  document.getElementById("videoContainer")
+    .style.display = "none";
   
   log("ACTIVE STREAM TRACKS",activeStream?.getTracks()?.length);
   activeStream?.getTracks()
