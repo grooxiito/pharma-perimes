@@ -131,6 +131,8 @@ let codeReader;
 let hardScanTimeout;
 let currentControls = null;
 let activeStream = null;
+let hardScanRunning = false;
+let hardScanStopTimeout = null;
 
 const elStatus = document.getElementById("status");
 const elDebug = document.getElementById("debug");
@@ -201,14 +203,6 @@ document.addEventListener(
 );
 
 loadBdpm();
-
-function resetForm00() {
-
-  document.getElementById("product").value = "";
-  document.getElementById("comment").value = "";
-
-  document.getElementById("dates").innerHTML = "";
-}
 
 function resetForm() {
 
@@ -351,12 +345,34 @@ async function startScan() {
 
 async function startHardScan() {
 
+  hardScanRunning = true;
+
   try {
 
     resetForm();
 
     elStatus.textContent =
       "Mode scan robuste...";
+
+    hardScanStopTimeout =
+      setTimeout(() => {
+    
+        if (hardScanRunning) {
+    
+          log("HARD SCAN TIMEOUT");
+    
+          stop();
+    
+          hardScanRunning = false;
+    
+          elStatus.textContent =
+            "Aucun code détecté";
+    
+          document.getElementById("hardScanBtn")
+            .style.display = "block";
+        }
+    
+      }, 15000);
 
     document.getElementById("hardScanBtn")
       .style.display = "none";
@@ -386,6 +402,10 @@ async function startHardScan() {
 
         if (result) {
 
+          hardScanRunning = false;
+
+          clearTimeout(hardScanStopTimeout);
+          
           const raw =
             result.getText();
 
@@ -475,7 +495,7 @@ async function handleScanResult(raw) {
 }
   
 // avec BarcodeDetector OK - avant passage ZXing  
-async function startScan00() {
+async function startScanBarcodeDetector() {
 
   elStatus.textContent = "Autorisation caméra...";
 
@@ -559,6 +579,11 @@ async function startScan00() {
 function stop() {
 
   log("STOP CAMERA");
+
+  // arrêt du hardScan
+  hardScanRunning = false;
+
+  clearTimeout(hardScanStopTimeout);
 
   try {
 
