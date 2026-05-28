@@ -81,6 +81,20 @@ video {
   overflow: auto;
   border-radius: 10px;
 }
+  
+#scanOverlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220px;
+  height: 220px;
+  transform: translate(-50%, -50%);
+  border: 3px solid #00ff88;
+  border-radius: 16px;
+  pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.35);
+}
+  
 </style>
 </head>
 
@@ -96,7 +110,11 @@ video {
   ⚠️ Datamatrix difficile
 </button>
 
-<video id="video" autoplay playsinline></video>
+<!--<video id="video" autoplay playsinline></video>-->
+<div style="position:relative">
+  <video id="video" autoplay playsinline></video>
+  <div id="scanOverlay"></div>
+</div>
 
 <div id="expiredWarning" style="display:none;">
   ⛔ PRODUIT PÉRIMÉ
