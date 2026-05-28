@@ -345,6 +345,7 @@ async function startScan() {
 
 async function startHardScan() {
 
+  stop();
   hardScanRunning = true;
 
   try {
@@ -643,11 +644,21 @@ function stop() {
   } catch(e) {}
 
   log("CAMERA FULLY STOPPED");
-}
+  codeReader = null;
+  currentControls = null;
   
-// stop ok avec BarcodeDetector avant passage ZXing
-function stop00() {
-  stream?.getTracks().forEach(t => t.stop());
+  log("ACTIVE STREAM TRACKS",activeStream?.getTracks()?.length);
+  activeStream?.getTracks()
+  .forEach(track => {
+
+    log(
+      "TRACK STATE",
+      track.readyState
+    );
+
+    track.stop();
+  });
+  
 }
 
 function extractGTIN(raw) {
