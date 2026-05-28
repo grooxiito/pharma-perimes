@@ -102,6 +102,19 @@ video {
   box-shadow: 0 0 0 9999px rgba(0,0,0,0.35);
   display: none;
 }
+
+.dateWrapper {
+  margin-top: 10px;
+}
+
+.dateWarning {
+  margin-top: 4px;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: bold;
+  display: none;
+}
   
 </style>
 </head>
@@ -267,12 +280,54 @@ function findDrugByCip(cip13) {
   return denomination || null;
 }
 
-function addDate(value = "") {
+// ancienne avant test péremptions proches  
+function addDate00(value = "") {
   const d = document.createElement("input");
   d.className = "date";
   d.placeholder = "MM-YYYY";
   d.value = value;
   document.getElementById("dates").appendChild(d);
+}
+
+// nouvelle fonction addDate
+function addDate(value = "") {
+
+  const wrapper =
+    document.createElement("div");
+
+  wrapper.className =
+    "dateWrapper";
+
+  const input =
+    document.createElement("input");
+
+  input.className = "date";
+
+  input.placeholder = "MM-YYYY";
+
+  input.value = value;
+
+  const warning =
+    document.createElement("div");
+
+  warning.className =
+    "dateWarning";
+
+  input.addEventListener(
+    "input",
+    updateExpiryState
+  );
+
+  wrapper.appendChild(input);
+
+  wrapper.appendChild(warning);
+
+  document
+    .getElementById("dates")
+    .appendChild(wrapper);
+
+  // IMPORTANT : recalcul immédiat
+  setTimeout(updateExpiryState, 0);
 }
 
 function isExpired(mmYYYY) {
@@ -295,6 +350,139 @@ function isExpired(mmYYYY) {
       month <= currentMonth
     )
   );
+}
+
+// analyse des dates de péremption en fonction de la date actuelle
+function updateExpiryState() {
+
+  const saveBtn =
+    document.getElementById(
+      "saveBtn"
+    );
+
+  const now = new Date();
+
+  const currentMonth =
+    now.getMonth() + 1;
+
+  const currentYear =
+    now.getFullYear();
+
+  const currentDay =
+    now.getDate();
+
+  // après le 20 :
+  // on décale les seuils
+  const offset =
+    currentDay > 20 ? 1 : 0;
+
+  let blockSave = false;
+
+  document
+    .querySelectorAll(".dateWrapper")
+    .forEach(wrapper => {
+
+      const input =
+        wrapper.querySelector(".date");
+
+      const warning =
+        wrapper.querySelector(
+          ".dateWarning"
+        );
+
+      const value =
+        input.value.trim();
+
+      warning.style.display = "none";
+
+      input.style.background = "";
+
+      if (!value) return;
+
+      const [month, year] =
+        value.split("-").map(Number);
+
+      const diffMonths =
+        (
+          (year - currentYear) * 12
+        ) +
+        (
+          month - currentMonth
+        );
+
+      // ROUGE
+      if (diffMonths <= offset) {
+
+        input.style.background =
+          "#ffb3b3";
+
+        warning.style.display =
+          "block";
+
+        warning.style.background =
+          "#ff4d4d";
+
+        warning.style.color =
+          "white";
+
+        warning.textContent =
+          "⛔ Produit périmé ou trop proche";
+
+        blockSave = true;
+
+        return;
+      }
+
+      // ORANGE
+      if (
+        diffMonths === offset + 1
+      ) {
+
+        input.style.background =
+          "#ffd699";
+
+        warning.style.display =
+          "block";
+
+        warning.style.background =
+          "#ff9900";
+
+        warning.style.color =
+          "white";
+
+        warning.textContent =
+          "⚠ Produit bientôt périmé : à mettre de côté";
+
+        blockSave = true;
+
+        return;
+      }
+
+      // JAUNE
+      if (
+        diffMonths === offset + 2
+      ) {
+
+        input.style.background =
+          "#fff1a8";
+
+        warning.style.display =
+          "block";
+
+        warning.style.background =
+          "#ffe066";
+
+        warning.style.color =
+          "black";
+
+        warning.textContent =
+          "⚠ Produit date courte";
+
+        return;
+      }
+    });
+
+  saveBtn.disabled = blockSave;
 }
 
 // scan avec ZXing pour meilleure compatibilité
@@ -471,6 +659,50 @@ async function startHardScan() {
 }
 
 async function handleScanResult(raw) {
+
+  const expiryMatch =
+    raw.match(/17(\d{6})/);
+
+  if (expiryMatch) {
+
+    const expiry =
+      expiryMatch[1];
+
+    const yy =
+      expiry.substring(0, 2);
+
+    const mm =
+      expiry.substring(2, 4);
+
+    document.getElementById("dates")
+      .innerHTML = "";
+
+    addDate(
+      mm + "-20" + yy
+    );
+
+    updateExpiryState();
+
+    log("EXPIRY", expiry);
+  }
+
+  const gtin =
+    extractGTIN(raw);
+
+  const cip13 =
+    gtin?.startsWith("0")
+      ? gtin.slice(1)
+      : gtin;
+
+  scannedCode = cip13;
+
+  log("CIP13", cip13);
+
+  await lookup(cip13);
+}
+
+// ancien handler pour le scan et péremption
+async function handleScanResult00(raw) {
 
   const expiryMatch =
     raw.match(/17(\d{6})/);
