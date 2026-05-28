@@ -355,10 +355,14 @@ function isExpired(mmYYYY) {
 // analyse des dates de péremption en fonction de la date actuelle
 function updateExpiryState() {
 
+  log("=== UPDATE EXPIRY STATE ===");
+
   const saveBtn =
     document.getElementById(
       "saveBtn"
     );
+
+  log("CHECK DATES COUNT =", document.querySelectorAll(".dateWrapper").length);
 
   const now = new Date();
 
@@ -393,14 +397,24 @@ function updateExpiryState() {
       const value =
         input.value.trim();
 
+      log("DATE RAW =", value);
+
       warning.style.display = "none";
 
       input.style.background = "";
 
       if (!value) return;
 
-      const [month, year] =
-        value.split("-").map(Number);
+      const parts = value.split("-");
+
+      if (parts.length !== 2) return;
+      
+      const month = Number(parts[0]);
+      const year = Number(parts[1]);
+
+      log("PARSED DATE =", { month, year });
+      
+      if (isNaN(month) || isNaN(year)) return;
 
       const diffMonths =
         (
@@ -412,6 +426,8 @@ function updateExpiryState() {
 
       // ROUGE
       if (diffMonths <= offset) {
+
+        log("🔴 RED ZONE", { value, diffMonths, offset });
 
         input.style.background =
           "#ffb3b3";
@@ -437,6 +453,8 @@ function updateExpiryState() {
       if (
         diffMonths === offset + 1
       ) {
+
+        log("🟠 ORANGE ZONE", { value, diffMonths, offset });
 
         input.style.background =
           "#ffd699";
@@ -481,6 +499,8 @@ function updateExpiryState() {
         return;
       }
     });
+
+  log("BLOCKSAVE =", blockSave);
 
   saveBtn.disabled = blockSave;
 }
