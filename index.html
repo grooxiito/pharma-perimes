@@ -46,14 +46,6 @@ video {
   object-fit:cover;
 }
 
-.expired {
-  background:#ffebee;
-  color:#c62828;
-  border:2px solid #c62828;
-  padding:10px;
-  border-radius:8px;
-}
-
 #expiredWarning {
   display:none;
   margin-top:10px;
@@ -125,13 +117,10 @@ video {
 
 <button id="scanBtn">Scanner produit</button>
 
-<button
-  id="hardScanBtn"
-  style="display:none;background:#d32f2f;">
+<button id="hardScanBtn" style="display:none;background:#d32f2f;">
   ⚠️ Datamatrix difficile
 </button>
 
-<!--<video id="video" autoplay playsinline></video>-->
 <div id="videoContainer">
   <video id="video" autoplay playsinline></video>
   <div id="scanOverlay"></div>
