@@ -936,6 +936,16 @@ function extractGTIN(raw) {
 // parser GS1
 function parseGS1(raw) {
 
+  log(
+    "RAW HEX",
+    [...raw]
+      .map(c =>
+        c.charCodeAt(0)
+          .toString(16)
+      )
+      .join(" ")
+  );
+
   const result = {
     gtin: null,
     expiry: null,
@@ -957,21 +967,53 @@ function parseGS1(raw) {
   // 17 EXP
   // 10 LOT
 
-  const pharmaMatch =
+  // Variante 1
+  let pharmaMatch =
     raw.match(
       /01(\d{14})21(.+?)17(\d{6})10(.+)/
     );
-
+  
   if (pharmaMatch) {
-
+  
     result.serial =
-      pharmaMatch[2];
-
+      pharmaMatch[2]
+        .replace(/\u001d/g, "")
+        .trim();
+  
     result.expiry =
       pharmaMatch[3];
-
+  
     result.lot =
+      pharmaMatch[4]
+        .replace(/\u001d/g, "")
+        .trim();
+  
+    return result;
+  }
+  
+  // Variante 2
+  pharmaMatch =
+    raw.match(
+      /01(\d{14})21(.+?)10(.+?)17(\d{6})/
+    );
+  
+  if (pharmaMatch) {
+  
+    result.serial =
+      pharmaMatch[2]
+        .replace(/\u001d/g, "")
+        .trim();
+  
+    result.lot =
+      pharmaMatch[3]
+        .replace(/\u001d/g, "")
+        .trim();
+  
+    result.expiry =
       pharmaMatch[4];
+  
+    return result;
+  }
 
     return result;
   }
