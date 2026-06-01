@@ -665,36 +665,42 @@ async function startHardScan() {
   }
 }
 
+// handleScanResult avec parser GS1
 async function handleScanResult(raw) {
 
-  const expiryMatch =
-    raw.match(/17(\d{6})/);
-
-  if (expiryMatch) {
-
-    const expiry =
-      expiryMatch[1];
-
+  const gs1 =
+    parseGS1(raw);
+  
+  log("GS1", gs1);
+  
+  if (gs1.expiry) {
+  
     const yy =
-      expiry.substring(0, 2);
-
+      gs1.expiry.substring(0, 2);
+  
     const mm =
-      expiry.substring(2, 4);
-
+      gs1.expiry.substring(2, 4);
+  
     document.getElementById("dates")
       .innerHTML = "";
-
+  
     addDate(
       mm + "-20" + yy
     );
-
+  
     updateExpiryState();
-
-    log("EXPIRY", expiry);
+  
+    log(
+      "EXPIRY PARSED",
+      gs1.expiry
+    );
   }
 
+  const gs1 =
+    parseGS1(raw);
+  
   const gtin =
-    extractGTIN(raw);
+    gs1.gtin;;
 
   const cip13 =
     gtin?.startsWith("0")
@@ -704,6 +710,8 @@ async function handleScanResult(raw) {
   scannedCode = cip13;
 
   log("CIP13", cip13);
+  log("RAW", raw);
+  log("GS1 PARSED", gs1);
 
   await lookup(cip13);
 }
@@ -732,27 +740,7 @@ async function handleScanResult00(raw) {
       mm + "-20" + yy
     );
 
-    const expiryDate =
-      mm + "-20" + yy;
-
-    productExpired =
-      isExpired(expiryDate);
-
-    document.getElementById("saveBtn")
-      .disabled =
-        productExpired;
-
-    document.getElementById("saveBtn")
-      .style.display =
-        productExpired
-          ? "none"
-          : "block";
-
-    document.getElementById("expiredWarning")
-      .style.display =
-        productExpired
-          ? "block"
-          : "none";
+    updateExpiryState();
 
     log("EXPIRY", expiry);
   }
@@ -947,6 +935,65 @@ function stop() {
 function extractGTIN(raw) {
   const m = raw.match(/01(\d{14})/);
   return m ? m[1] : raw;
+}
+
+// parser GS1
+function parseGS1(raw) {
+
+  const result = {
+    gtin: null,
+    expiry: null,
+    lot: null,
+    serial: null
+  };
+
+  // GTIN (AI 01)
+  const gtinMatch =
+    raw.match(/01(\d{14})/);
+
+  if (gtinMatch) {
+    result.gtin = gtinMatch[1];
+  }
+
+  // Cas pharma classique :
+  // 01 GTIN
+  // 21 SERIAL
+  // 17 EXP
+  // 10 LOT
+
+  const pharmaMatch =
+    raw.match(
+      /01(\d{14})21(.+?)17(\d{6})10(.+)/
+    );
+
+  if (pharmaMatch) {
+
+    result.serial =
+      pharmaMatch[2];
+
+    result.expiry =
+      pharmaMatch[3];
+
+    result.lot =
+      pharmaMatch[4];
+
+    return result;
+  }
+
+  // Fallback si ordre différent
+
+  const expiryMatches =
+    [...raw.matchAll(/17(\d{6})/g)];
+
+  if (expiryMatches.length) {
+
+    result.expiry =
+      expiryMatches[
+        expiryMatches.length - 1
+      ][1];
+  }
+
+  return result;
 }
 
 // ancienne OK sauf vidal
