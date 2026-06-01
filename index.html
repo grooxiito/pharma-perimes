@@ -933,7 +933,7 @@ function extractGTIN(raw) {
   return m ? m[1] : raw;
 }
 
-// parser GS1
+// parser GS1 pour variantes datamatrix
 function parseGS1(raw) {
 
   log(
@@ -953,7 +953,7 @@ function parseGS1(raw) {
     serial: null
   };
 
-  // GTIN (AI 01)
+  // GTIN
   const gtinMatch =
     raw.match(/01(\d{14})/);
 
@@ -961,64 +961,66 @@ function parseGS1(raw) {
     result.gtin = gtinMatch[1];
   }
 
-  // Cas pharma classique :
+  // Variante 1 :
   // 01 GTIN
   // 21 SERIAL
   // 17 EXP
   // 10 LOT
 
-  // Variante 1
   let pharmaMatch =
     raw.match(
       /01(\d{14})21(.+?)17(\d{6})10(.+)/
     );
-  
+
   if (pharmaMatch) {
-  
+
     result.serial =
       pharmaMatch[2]
         .replace(/\u001d/g, "")
         .trim();
-  
+
     result.expiry =
       pharmaMatch[3];
-  
+
     result.lot =
       pharmaMatch[4]
         .replace(/\u001d/g, "")
         .trim();
-  
+
     return result;
   }
-  
-  // Variante 2
+
+  // Variante 2 :
+  // 01 GTIN
+  // 21 SERIAL
+  // 10 LOT
+  // 17 EXP
+
   pharmaMatch =
     raw.match(
       /01(\d{14})21(.+?)10(.+?)17(\d{6})/
     );
-  
+
   if (pharmaMatch) {
-  
+
     result.serial =
       pharmaMatch[2]
         .replace(/\u001d/g, "")
         .trim();
-  
+
     result.lot =
       pharmaMatch[3]
         .replace(/\u001d/g, "")
         .trim();
-  
+
     result.expiry =
       pharmaMatch[4];
-  
-    return result;
-  }
 
     return result;
   }
 
-  // Fallback si ordre différent
+  // Fallback :
+  // chercher la dernière date 17xxxxxx
 
   const expiryMatches =
     [...raw.matchAll(/17(\d{6})/g)];
