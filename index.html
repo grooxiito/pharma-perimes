@@ -936,6 +936,8 @@ function extractGTIN(raw) {
 // parser GS1 pour variantes datamatrix
 function parseGS1(raw) {
 
+  raw = raw.replace(/\u001d/g, "");
+
   log(
     "RAW HEX",
     [...raw]
@@ -1016,6 +1018,29 @@ function parseGS1(raw) {
     result.expiry =
       pharmaMatch[4];
 
+    return result;
+  }
+
+  // Variante 3
+  // 01 GTIN
+  // 17 EXP
+  // 10 LOT
+  
+  pharmaMatch =
+    raw.match(
+      /01(\d{14})17(\d{6})10(.+)/
+    );
+  
+  if (pharmaMatch) {
+  
+    result.expiry =
+      pharmaMatch[2];
+  
+    result.lot =
+      pharmaMatch[3]
+        .replace(/\u001d/g, "")
+        .trim();
+  
     return result;
   }
 
