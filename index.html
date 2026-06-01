@@ -670,37 +670,35 @@ async function handleScanResult(raw) {
 
   const gs1 =
     parseGS1(raw);
-  
-  log("GS1", gs1);
-  
+
+  log("RAW", raw);
+  log("GS1 PARSED", gs1);
+
   if (gs1.expiry) {
-  
+
     const yy =
       gs1.expiry.substring(0, 2);
-  
+
     const mm =
       gs1.expiry.substring(2, 4);
-  
+
     document.getElementById("dates")
       .innerHTML = "";
-  
+
     addDate(
       mm + "-20" + yy
     );
-  
+
     updateExpiryState();
-  
+
     log(
       "EXPIRY PARSED",
       gs1.expiry
     );
   }
 
-  const gs1 =
-    parseGS1(raw);
-  
   const gtin =
-    gs1.gtin;;
+    gs1.gtin;
 
   const cip13 =
     gtin?.startsWith("0")
@@ -710,8 +708,6 @@ async function handleScanResult(raw) {
   scannedCode = cip13;
 
   log("CIP13", cip13);
-  log("RAW", raw);
-  log("GS1 PARSED", gs1);
 
   await lookup(cip13);
 }
