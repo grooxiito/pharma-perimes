@@ -933,6 +933,39 @@ function extractGTIN(raw) {
   return m ? m[1] : raw;
 }
 
+// validation date GS1
+function isValidGS1Expiry(yymmdd) {
+
+  if (!/^\d{6}$/.test(yymmdd)) {
+    return false;
+  }
+
+  const yy =
+    Number(yymmdd.substring(0, 2));
+
+  const mm =
+    Number(yymmdd.substring(2, 4));
+
+  const dd =
+    Number(yymmdd.substring(4, 6));
+
+  const currentYear =
+    new Date().getFullYear() % 100;
+
+  // TEST ANNEE COURANTE +5 ANS (voir évolution des normes)
+  const maxYear =
+    currentYear + 5;
+
+  return (
+    mm >= 1 &&
+    mm <= 12 &&
+    dd >= 1 &&
+    dd <= 31 &&
+    yy >= currentYear &&
+    yy <= maxYear
+  );
+}
+
 // parser GS1 pour variantes datamatrix
 function parseGS1(raw) {
 
@@ -954,6 +987,18 @@ function parseGS1(raw) {
     lot: null,
     serial: null
   };
+
+  // =========================
+  // EAN13 SIMPLE
+  // =========================
+  
+  if (/^\d{13}$/.test(raw.trim())) {
+  
+    result.gtin =
+      raw.trim();
+  
+    return result;
+  }
 
   // GTIN
   const gtinMatch =
@@ -1045,19 +1090,27 @@ function parseGS1(raw) {
   }
 
   // Fallback :
-  // chercher la dernière date 17xxxxxx
-
+  // chercher une date valide 17xxxxxx
+  
   const expiryMatches =
     [...raw.matchAll(/17(\d{6})/g)];
-
-  if (expiryMatches.length) {
-
-    result.expiry =
-      expiryMatches[
-        expiryMatches.length - 1
-      ][1];
+  
+  for (const match of expiryMatches) {
+  
+    const expiry =
+      match[1];
+  
+    if (
+      isValidGS1Expiry(expiry)
+    ) {
+  
+      result.expiry =
+        expiry;
+  
+      break;
+    }
   }
-
+  
   return result;
 }
 
