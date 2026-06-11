@@ -3,8 +3,8 @@
 Fichiers base de données des médicaments : https://base-donnees-publique.medicaments.gouv.fr/telechargement
 
 Fichiers actuellement utilisés :
-- Fichier des spécialités (Date de mise à jour : 28/04/2026, 3091 Ko)
-- Fichier des présentations (Date de mise à jour : 28/05/2026, 4054 Ko)
+- Fichier des spécialités (Date de mise à jour : 03/06/2026, 3092 Ko)
+- Fichier des présentations (Date de mise à jour : 10/06/2026, 4054 Ko)
 
 # 📦 Gestion des Périmés Pharma & Parapharmacie
 
