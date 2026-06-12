@@ -161,6 +161,7 @@ let currentControls = null;
 let activeStream = null;
 let hardScanRunning = false;
 let hardScanStopTimeout = null;
+let lookupRunning = false;
 
 const elStatus = document.getElementById("status");
 const elDebug = document.getElementById("debug");
@@ -520,6 +521,10 @@ async function startScan() {
 
         if (result) {
 
+          if (lookupRunning) {
+            return;
+          }
+
           clearTimeout(hardScanTimeout);
 
           document.getElementById("hardScanBtn")
@@ -636,6 +641,10 @@ async function startHardScan() {
 
         if (result) {
 
+          if (lookupRunning) {
+            return;
+          }
+
           hardScanRunning = false;
 
           clearTimeout(hardScanStopTimeout);
@@ -668,48 +677,64 @@ async function startHardScan() {
 // handleScanResult avec parser GS1
 async function handleScanResult(raw) {
 
-  const gs1 =
-    parseGS1(raw);
-
-  log("RAW", raw);
-  log("GS1 PARSED", gs1);
-
-  if (gs1.expiry) {
-
-    const yy =
-      gs1.expiry.substring(0, 2);
-
-    const mm =
-      gs1.expiry.substring(2, 4);
-
-    document.getElementById("dates")
-      .innerHTML = "";
-
-    addDate(
-      mm + "-20" + yy
-    );
-
-    updateExpiryState();
-
-    log(
-      "EXPIRY PARSED",
-      gs1.expiry
-    );
+  if (lookupRunning) {
+    log("LOOKUP ALREADY RUNNING");
+    return;
   }
 
-  const gtin =
-    gs1.gtin;
+  lookupRunning = true;
 
-  const cip13 =
-    gtin?.startsWith("0")
-      ? gtin.slice(1)
-      : gtin;
+  try {
 
-  scannedCode = cip13;
+    const gs1 =
+      parseGS1(raw);
 
-  log("CIP13", cip13);
+    log("RAW", raw);
+    log("GS1 PARSED", gs1);
 
-  await lookup(cip13);
+    if (gs1.expiry) {
+
+      const yy =
+        gs1.expiry.substring(0, 2);
+
+      const mm =
+        gs1.expiry.substring(2, 4);
+
+      document.getElementById("dates")
+        .innerHTML = "";
+
+      addDate(
+        mm + "-20" + yy
+      );
+
+      updateExpiryState();
+
+      log(
+        "EXPIRY PARSED",
+        gs1.expiry
+      );
+    }
+
+    const gtin =
+      gs1.gtin;
+
+    const cip13 =
+      gtin?.startsWith("0")
+        ? gtin.slice(1)
+        : gtin;
+
+    scannedCode = cip13;
+
+    log("CIP13", cip13);
+
+    await lookup(cip13);
+
+  } finally {
+
+    lookupRunning = false;
+
+    log("LOOKUP FINISHED");
+  }
 }
 
 // ancien handler pour le scan et péremption
@@ -1346,22 +1371,34 @@ async function save() {
 
     log("SAVE RESULT", json);
 
-    // 2. SAVE CACHE (nouveau point central)
-    const cacheRes = await fetch(
-      BASE_URL +
-      "?action=saveCache" +
-      "&cip=" + encodeURIComponent(scannedCode) +
-      "&cis=" + encodeURIComponent(cipMap[scannedCode] || "") +
-      "&product=" + encodeURIComponent(productInput)
-    );
-
-    const cacheJson = await cacheRes.json();
-    log("CACHE RESULT", cacheJson);
+    // 2. SAVE CACHE
+    if (
+      scannedCode &&
+      scannedCode !== "null"
+    ) {
+    
+      const cacheRes = await fetch(
+        BASE_URL +
+        "?action=saveCache" +
+        "&cip=" + encodeURIComponent(scannedCode) +
+        "&cis=" + encodeURIComponent(cipMap[scannedCode] || "") +
+        "&product=" + encodeURIComponent(productInput)
+      );
+    
+      const cacheJson =
+        await cacheRes.json();
+    
+      log("CACHE RESULT", cacheJson);
+    
+    } else {
+    
+      log("CACHE SKIPPED : INVALID CIP");
+    }
 
     elStatus.textContent =
       json.success
-        ? "Produit enregistré"
-        : "Erreur enregistrement";
+        ? "✅ " + productInput + " enregistré correctement"
+        : "❌ Erreur enregistrement";
 
   } catch (err) {
 
